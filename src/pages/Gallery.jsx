@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc, increment, startAfter } from 'firebase/firestore';
+import CustomModal from '../components/CustomModal';
 
 const TAGS = [
   { id: 'all', label: { ko: '전체', en: 'All', ja: 'すべて', zh: '全部' } },
@@ -13,6 +14,15 @@ const TAGS = [
 const TIERS = ['OP', 'S', 'A', 'B', 'C', 'D'];
 const TIER_COLORS = { 'OP': '#ff7f7f', 'S': '#ffbf7f', 'A': '#ffff7f', 'B': '#7fff7f', 'C': '#7fbfff', 'D': '#bfbfbf' };
 
+const MSG = {
+  ko: { reportConfirm: '이 티어표를 신고하시겠습니까?', reported: '신고가 접수되었습니다.', clickToExpand: '▼ 클릭하여 전체 보기 ▼', reportTitle: '신고', alertTitle: '알림', cancel: '취소' },
+  en: { reportConfirm: 'Report this tier list?', reported: 'Report has been submitted.', clickToExpand: '▼ Click to expand ▼', reportTitle: 'Report', alertTitle: 'Notice', cancel: 'Cancel' },
+  ja: { reportConfirm: 'このティアリストを通報しますか？', reported: '通報を受け付けました。', clickToExpand: '▼ クリックしてすべて表示 ▼', reportTitle: '通報', alertTitle: 'お知らせ', cancel: 'キャンセル' },
+  zh: { reportConfirm: '举报此节奏榜？', reported: '举报已提交。', clickToExpand: '▼ 点击展开全部 ▼', reportTitle: '举报', alertTitle: '提示', cancel: '取消' },
+};
+
+const LANG_MAP = { ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', zh: 'zh-CN' };
+
 export default function Gallery({ lang, isDark }) {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +30,10 @@ export default function Gallery({ lang, isDark }) {
   const [selectedTag, setSelectedTag] = useState('all');
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+
+  // Modal State
+  const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+  const t = (key) => MSG[lang]?.[key] || MSG.en[key];
 
   useEffect(() => {
     fetchGallery(true);
@@ -68,26 +82,49 @@ export default function Gallery({ lang, isDark }) {
     }
   };
 
-  const handleReport = async (id) => {
-    if (!window.confirm("이 티어표를 신고하시겠습니까? (Report this tier list?)")) return;
-    try {
-      await updateDoc(doc(db, "tier_results", id), {
-        reports: increment(1)
-      });
-      alert("신고가 접수되었습니다. (Reported)");
-      setSubmissions(prev => prev.map(s => s.id === id ? { ...s, reports: (s.reports || 0) + 1 } : s));
-    } catch (e) {
-      console.error(e);
-    }
+  const showConfirm = (title, message, onConfirmAction) => {
+    setModalConfig({
+      isOpen: true, title, message, type: 'confirm',
+      onConfirm: () => {
+        setModalConfig({ ...modalConfig, isOpen: false });
+        onConfirmAction();
+      }
+    });
   };
 
-  const filtered = submissions.filter(s => {
-    if ((s.reports || 0) >= 5) return false;
-    return true;
-  });
+  const showAlert = (title, message) => {
+    setModalConfig({ isOpen: true, title, message, type: 'alert', onConfirm: () => setModalConfig({ ...modalConfig, isOpen: false }) });
+  };
+
+  const handleReport = (id) => {
+    showConfirm(t('reportTitle'), t('reportConfirm'), async () => {
+      try {
+        await updateDoc(doc(db, "tier_results", id), {
+          reports: increment(1)
+        });
+        showAlert(t('alertTitle'), t('reported'));
+        setSubmissions(prev => prev.map(s => s.id === id ? { ...s, reports: (s.reports || 0) + 1 } : s));
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  };
+
+  const filtered = submissions;
 
   return (
     <div className="flex flex-col gap-6">
+      <CustomModal 
+        isOpen={modalConfig.isOpen}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        isDark={isDark}
+        onConfirm={modalConfig.onConfirm}
+        onCancel={modalConfig.type === 'confirm' ? () => setModalConfig({ ...modalConfig, isOpen: false }) : null}
+        confirmText="OK"
+        cancelText={t('cancel')}
+      />
+
       <div className={`p-4 rounded-xl border flex flex-wrap gap-2 ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
         {TAGS.map(t => (
           <button 
@@ -109,7 +146,7 @@ export default function Gallery({ lang, isDark }) {
         {!loading && filtered.length === 0 && <div className="col-span-full text-center py-10 opacity-50">No submissions found.</div>}
         
         {filtered.map(sub => (
-          <SubmissionCard key={sub.id} sub={sub} lang={lang} isDark={isDark} handleReport={handleReport} />
+          <SubmissionCard key={sub.id} sub={sub} lang={lang} isDark={isDark} handleReport={handleReport} t={t} />
         ))}
         
         {!loading && hasMore && (
@@ -126,11 +163,14 @@ export default function Gallery({ lang, isDark }) {
   );
 }
 
-function SubmissionCard({ sub, lang, isDark, handleReport }) {
+function SubmissionCard({ sub, lang, isDark, handleReport, t }) {
   const [expanded, setExpanded] = useState(false);
-
-  // Find the highest tier that actually has items to show as the preview
   const firstTier = TIERS.find(t => sub.tiers[t] && sub.tiers[t].length > 0) || 'OP';
+  
+  const formattedDate = new Intl.DateTimeFormat(LANG_MAP[lang] || 'ko-KR', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }).format(new Date(sub.timestamp));
 
   return (
     <div className={`rounded-xl border overflow-hidden shadow-sm transition-colors ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-slate-200'}`}>
@@ -139,7 +179,7 @@ function SubmissionCard({ sub, lang, isDark, handleReport }) {
           <span className={`px-2 py-1 rounded text-xs font-bold ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`}>
             {TAGS.find(t => t.id === sub.tag)?.label[lang] || sub.tag}
           </span>
-          <span className="text-sm opacity-60">{new Date(sub.timestamp).toLocaleString()}</span>
+          <span className="text-sm opacity-60">{formattedDate}</span>
         </div>
         <button onClick={() => handleReport(sub.id)} className="text-red-500 hover:text-red-400 text-sm flex items-center gap-1 font-medium">
           🚨 Report
@@ -152,7 +192,7 @@ function SubmissionCard({ sub, lang, isDark, handleReport }) {
         {TIERS.map(tier => {
           const items = sub.tiers[tier] || [];
           if (items.length === 0) return null;
-          if (!expanded && tier !== firstTier) return null; // Show only the highest tier when collapsed
+          if (!expanded && tier !== firstTier) return null; 
           
           return (
             <div key={tier} className="flex gap-2">
@@ -170,7 +210,7 @@ function SubmissionCard({ sub, lang, isDark, handleReport }) {
         
         {!expanded && (
           <div className="text-center mt-2 text-sm font-bold opacity-40 hover:opacity-80 transition">
-            ▼ Click to expand (클릭하여 전체 보기) ▼
+            {t('clickToExpand')}
           </div>
         )}
       </div>
