@@ -9,19 +9,27 @@ const URLS = {
 const EXCLUDE_SET = new Set([
   'Mechanist', 'Misery', 'Outcast', 'Pith', 'Scout', 'Sharp', 'Stormeye', 'Touch', 'Ulst', 'Tulip'
 ]);
+
+const EXCLUDE_IDS = new Set([
+  'char_614_acsupo', 'char_617_sharp2', 'char_616_pithst', 
+  'char_505_rcast', 'char_514_rdfend', 'char_506_rmedic', 
+  'char_504_rguard', 'char_507_rsnipe'
+]);
+
 const isReserveOperator = (s) => /^Reserve Operator\s*-\s*/i.test(s || '');
 
-const isExcluded = (c) => {
+const isExcluded = (c, key) => {
+  if (EXCLUDE_IDS.has(key)) return true;
   const app = (c.appellation || '').trim();
   const nm = (c.name || '').trim();
   return EXCLUDE_SET.has(app) || EXCLUDE_SET.has(nm) || isReserveOperator(app) || isReserveOperator(nm);
 };
 
 const isTargetRarity = (r) => {
-  if (typeof r === 'number') return r >= 3 && r <= 5;
+  if (typeof r === 'number') return r >= 0 && r <= 5;
   if (typeof r === 'string') {
     const s = r.toUpperCase();
-    return s.includes('4') || s.includes('5') || s.includes('6');
+    return s.includes('1') || s.includes('2') || s.includes('3') || s.includes('4') || s.includes('5') || s.includes('6');
   }
   return false;
 };
@@ -47,7 +55,7 @@ export async function fetchCharacters() {
       if (prof === 'TOKEN' || prof === 'TRAP') continue;
 
       if (!isTargetRarity(c.rarity)) continue;
-      if (isExcluded(c)) continue;
+      if (isExcluded(c, key)) continue;
 
       const nameCN = c.name || c.appellation || key;
       const label = (c.appellation && String(c.appellation).trim().length > 0) ? c.appellation : nameCN;
