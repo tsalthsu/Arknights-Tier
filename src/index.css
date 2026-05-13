@@ -62,7 +62,9 @@ body:has(.sortable-fallback) * {
   opacity: 0.4 !important;
   filter: blur(1px);
   background-color: rgba(0, 0, 0, 0.1);
-  border: 2px dashed #4facfe;
+  outline: 2px dashed #4facfe;
+  outline-offset: -2px;
+  border-color: transparent !important;
 }
 .sortable-drag {
   opacity: 0;

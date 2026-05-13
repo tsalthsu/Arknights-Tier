@@ -263,7 +263,7 @@ export default function Maker({ lang, isDark }) {
           fallbackOnBody={true}
           list={pool}
           setList={setPool}
-          className="flex flex-wrap gap-2 min-h-[150px]"
+          className="flex flex-wrap items-start gap-2 min-h-[150px]"
         >
           {pool.map(item => (
             <CharacterCard key={item.id} item={item} showNames={showNames} lang={lang} isDark={isDark} />
