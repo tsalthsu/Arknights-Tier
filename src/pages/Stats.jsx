@@ -348,13 +348,26 @@ export default function Stats({ lang, isDark }) {
                          </div>
                       )
                   })}
-                  
-                  {hoverInfo.active && hoverInfo.chars.length > 0 && (
-                      <div className="absolute transform -translate-x-1/2 -translate-y-full mb-8 z-[100] pointer-events-none" style={{ left: `${hoverInfo.x}%`, top: `${hoverInfo.chars[0].y}%` }}>
-                          <div className={`p-4 rounded-2xl shadow-2xl backdrop-blur-md border min-w-[300px] flex flex-col gap-4 ${isDark ? 'bg-zinc-900/95 border-zinc-700 text-white' : 'bg-white/95 border-slate-200 text-slate-900'}`}>
-                              <div className="text-[10px] font-bold opacity-50 uppercase tracking-widest text-center">
-                                  {hoverInfo.chars.length > 1 ? `${hoverInfo.chars.length} Characters in cluster` : 'Character Info'}
-                              </div>
+                  {/* Global Hover Tooltip */}
+                  {hoverInfo.active && hoverInfo.chars.length > 0 && (() => {
+                      const rootX = hoverInfo.x;
+                      const rootY = hoverInfo.chars[0].y;
+
+                      // Auto-adjust horizontal position
+                      let xClass = '-translate-x-1/2';
+                      if (rootX < 20) xClass = 'translate-x-0 ml-6';
+                      else if (rootX > 80) xClass = '-translate-x-full -ml-6';
+
+                      // Auto-adjust vertical position
+                      let yClass = '-translate-y-full -mt-6';
+                      if (rootY < 20) yClass = 'translate-y-0 mt-6';
+
+                      return (
+                          <div className={`absolute transform ${xClass} ${yClass} z-[100] pointer-events-none transition-transform duration-75`} style={{ left: `${rootX}%`, top: `${rootY}%` }}>
+                              <div className={`p-4 rounded-2xl shadow-2xl backdrop-blur-md border min-w-[300px] flex flex-col gap-4 ${isDark ? 'bg-zinc-900/95 border-zinc-700 text-white' : 'bg-white/95 border-slate-200 text-slate-900'}`}>
+                                  <div className="text-[10px] font-bold opacity-50 uppercase tracking-widest text-center">
+                                      {hoverInfo.chars.length > 1 ? `${hoverInfo.chars.length} Characters in cluster` : 'Character Info'}
+                                  </div>
                               {hoverInfo.chars.map(c => (
                                   <div key={c.skin.id} className="flex flex-col gap-2 border-b border-current pb-3 last:border-0 last:pb-0">
                                       <div className="flex justify-between items-center">
@@ -372,7 +385,8 @@ export default function Stats({ lang, isDark }) {
                               ))}
                           </div>
                       </div>
-                  )}
+                      );
+                  })()}
 
                 </div>
             </div>
