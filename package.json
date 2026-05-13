@@ -9,13 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hello-pangea/dnd": "^18.0.1",
     "dom-to-image-more": "^3.2.0",
     "firebase": "^12.13.0",
     "lucide-react": "^1.14.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^7.15.0"
+    "react-router-dom": "^7.15.0",
+    "react-sortablejs": "^6.1.4",
+    "sortablejs": "^1.15.7"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, memo } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import React, { useState, useEffect, memo, forwardRef } from 'react';
+import { ReactSortable } from 'react-sortablejs';
 import { fetchCharacters } from '../utils/dataFetcher';
 import { db } from '../firebase';
 import { collection, doc, increment, getDoc, writeBatch } from 'firebase/firestore';
@@ -14,7 +14,7 @@ const INITIAL_TIERS = [
   { id: 'D', color: '#bfbfbf', items: [] },
 ];
 
-const SCORE_MAP = { 'OP': 6, 'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 };
+const SCORE_MAP = { 'OP': 5, 'S': 4, 'A': 3, 'B': 2, 'C': 1, 'D': 0 };
 
 const TAGS = [
   { id: 'general', label: { ko: '범용성', en: 'General', ja: '汎用性', zh: '泛用性' } },
@@ -38,7 +38,6 @@ export default function Maker({ lang, isDark }) {
   const [submitModal, setSubmitModal] = useState(false);
   const [selectedTag, setSelectedTag] = useState('general');
 
-  // Custom Modal States
   const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
 
   const t = (key) => MSG[lang]?.[key] || MSG.en[key];
@@ -80,30 +79,6 @@ export default function Maker({ lang, isDark }) {
       setTiers(INITIAL_TIERS);
       setPool([]);
     });
-  };
-
-  const onDragEnd = (result) => {
-    const { source, destination } = result;
-    if (!destination) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
-
-    let sourceList, destList;
-    if (source.droppableId === 'pool') sourceList = Array.from(pool);
-    else sourceList = Array.from(tiers.find(t => t.id === source.droppableId).items);
-
-    if (destination.droppableId === 'pool') destList = source.droppableId === 'pool' ? sourceList : Array.from(pool);
-    else destList = source.droppableId === destination.droppableId ? sourceList : Array.from(tiers.find(t => t.id === destination.droppableId).items);
-
-    const [removed] = sourceList.splice(source.index, 1);
-    destList.splice(destination.index, 0, removed);
-
-    if (source.droppableId === 'pool') setPool(sourceList);
-    else setTiers(prev => prev.map(t => t.id === source.droppableId ? { ...t, items: sourceList } : t));
-
-    if (source.droppableId !== destination.droppableId) {
-      if (destination.droppableId === 'pool') setPool(destList);
-      else setTiers(prev => prev.map(t => t.id === destination.droppableId ? { ...t, items: destList } : t));
-    }
   };
 
   const handleSubmit = async () => {
@@ -194,43 +169,61 @@ export default function Maker({ lang, isDark }) {
         <button onClick={() => setSubmitModal(true)} className="px-6 py-2 rounded bg-emerald-600 font-bold text-white hover:bg-emerald-500">{t('submit')}</button>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex flex-col gap-2">
-          {tiers.map((tier) => (
-            <div key={tier.id} className={`flex min-h-[120px] rounded-lg border overflow-hidden ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-slate-300'}`}>
-              <div className="w-24 shrink-0 flex items-center justify-center font-black text-3xl text-zinc-900 border-r border-black/10" style={{ backgroundColor: tier.color }}>{tier.id}</div>
-              <Droppable droppableId={tier.id} direction="horizontal">
-                {(provided, snapshot) => (
-                  <div ref={provided.innerRef} {...provided.droppableProps} className={`flex-1 p-2 flex flex-wrap content-start gap-2 ${snapshot.isDraggingOver ? (isDark ? 'bg-zinc-700' : 'bg-slate-50') : ''}`}>
-                    {tier.items.map((item, index) => (
-                      <Draggable key={item.id} draggableId={item.id} index={index}>
-                        {(provided, snapshot) => <CharacterCard item={item} provided={provided} snapshot={snapshot} showNames={showNames} lang={lang} isDark={isDark} />}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
+      <div className="flex flex-col gap-2">
+        {tiers.map((tier) => (
+          <div key={tier.id} className={`flex min-h-[120px] rounded-lg border overflow-hidden ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-slate-300'}`}>
+            <div className="w-24 shrink-0 flex items-center justify-center font-black text-3xl text-zinc-900 border-r border-black/10" style={{ backgroundColor: tier.color }}>
+              {tier.id}
             </div>
-          ))}
-        </div>
+            <ReactSortable
+              group="shared"
+              animation={150}
+              delay={0}
+              scroll={true}
+              scrollSensitivity={150}
+              scrollSpeed={20}
+              forceFallback={true}
+              fallbackClass="sortable-fallback"
+              ghostClass="sortable-ghost"
+              dragClass="sortable-drag"
+              fallbackOnBody={true}
+              list={tier.items}
+              setList={(newState) => {
+                setTiers(prev => prev.map(t => t.id === tier.id ? { ...t, items: newState } : t));
+              }}
+              className={`flex-1 p-2 flex flex-wrap content-start gap-2 ${isDark ? 'hover:bg-zinc-700/30' : 'hover:bg-slate-50/50'} transition-colors`}
+            >
+              {tier.items.map(item => (
+                <CharacterCard key={item.id} item={item} showNames={showNames} lang={lang} isDark={isDark} />
+              ))}
+            </ReactSortable>
+          </div>
+        ))}
+      </div>
 
-        <div className={`mt-4 p-4 rounded-xl border min-h-[200px] ${isDark ? 'bg-zinc-800/30 border-zinc-700' : 'bg-white border-slate-300'}`}>
-          <h3 className="text-sm font-semibold text-zinc-500 mb-3">{t('pool')}</h3>
-          <Droppable droppableId="pool">
-            {(provided, snapshot) => (
-              <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-wrap gap-2 min-h-[150px]">
-                {pool.map((item, index) => (
-                  <Draggable key={item.id} draggableId={item.id} index={index}>
-                    {(provided, snapshot) => <CharacterCard item={item} provided={provided} snapshot={snapshot} showNames={showNames} lang={lang} isDark={isDark} />}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </div>
-      </DragDropContext>
+      <div className={`mt-4 p-4 rounded-xl border min-h-[200px] ${isDark ? 'bg-zinc-800/30 border-zinc-700' : 'bg-white border-slate-300'}`}>
+        <h3 className="text-sm font-semibold text-zinc-500 mb-3">{t('pool')}</h3>
+        <ReactSortable
+          group="shared"
+          animation={0} // 애니메이션 제거하여 대기열 렉 방지
+          delay={0}
+          scroll={true}
+          scrollSensitivity={150}
+          scrollSpeed={20}
+          forceFallback={true}
+          fallbackClass="sortable-fallback"
+          ghostClass="sortable-ghost"
+          dragClass="sortable-drag"
+          fallbackOnBody={true}
+          list={pool}
+          setList={setPool}
+          className="flex flex-wrap gap-2 min-h-[150px]"
+        >
+          {pool.map(item => (
+            <CharacterCard key={item.id} item={item} showNames={showNames} lang={lang} isDark={isDark} />
+          ))}
+        </ReactSortable>
+      </div>
 
       {submitModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
@@ -258,40 +251,38 @@ export default function Maker({ lang, isDark }) {
   );
 }
 
-const CharacterCard = memo(({ item, provided, snapshot, showNames, lang, isDark }) => {
+const CharacterCard = memo(forwardRef(({ item, showNames, lang, isDark }, ref) => {
   const displayName = item.nameMap[lang] || item.label;
   const [imgSrc, setImgSrc] = useState(item.image);
   const [hasError, setHasError] = useState(false);
 
   const handleError = () => {
     if (!hasError) {
-      // Fallback 1: PRTS Wiki via proxy (wsrv.nl handles image proxying and resizing reliably)
       const prtsUrl = `https://prts.wiki/w/Special:FilePath/头像_${item.nameMap.zh}.png`;
       setImgSrc(`https://wsrv.nl/?url=${encodeURIComponent(prtsUrl)}&w=120`);
       setHasError(true);
     } else {
-      // Fallback 2: Empty placeholder
       setImgSrc('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
     }
   };
 
   return (
     <div
-      ref={provided.innerRef}
-      {...provided.draggableProps}
-      {...provided.dragHandleProps}
-      className={`relative w-20 flex flex-col rounded-md overflow-hidden border shadow-sm transition-shadow select-none
-        ${snapshot.isDragging ? 'shadow-2xl scale-105 z-50 ring-2 ring-blue-500' : 'hover:shadow-md'} 
+      ref={ref}
+      data-id={item.id}
+      className={`relative w-20 flex flex-col rounded-md overflow-hidden border shadow-sm select-none cursor-grab
+        hover:shadow-lg hover:-translate-y-1 hover:z-10
         ${isDark ? 'bg-zinc-800 border-zinc-600' : 'bg-white border-slate-300'}
       `}
-      style={{ ...provided.draggableProps.style }}
+      style={{ touchAction: 'none', transform: 'translate3d(0,0,0)' }}
     >
-      <div className="w-full h-20 bg-zinc-200/20 relative">
+      <div className="w-full h-20 bg-zinc-200/20 relative pointer-events-none">
         <img 
           src={imgSrc} 
           alt={displayName} 
           className="w-full h-full object-cover pointer-events-none"
           draggable="false"
+          onDragStart={(e) => e.preventDefault()}
           onError={handleError}
         />
         <div className="absolute top-0 right-0 bg-black/60 text-yellow-400 text-[10px] px-1 font-bold rounded-bl">{item.star}★</div>
@@ -299,4 +290,4 @@ const CharacterCard = memo(({ item, provided, snapshot, showNames, lang, isDark 
       {showNames && <div className={`text-center py-1 px-0.5 text-[10px] font-semibold truncate ${isDark ? 'bg-zinc-900/50' : 'bg-slate-100'}`}>{displayName}</div>}
     </div>
   );
-});
+}));

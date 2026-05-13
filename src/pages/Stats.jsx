@@ -25,7 +25,7 @@ const TIMEFRAMES = [
   { id: 'all', label: { ko: '전체 데이터', en: 'All Time', ja: '全期間', zh: '全部' }, days: Infinity },
 ];
 
-const SCORE_MAP = { 'OP': 6, 'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 };
+const SCORE_MAP = { 'OP': 5, 'S': 4, 'A': 3, 'B': 2, 'C': 1, 'D': 0 };
 const TIER_COLORS = { 'OP': '#ff7f7f', 'S': '#ffbf7f', 'A': '#ffff7f', 'B': '#7fff7f', 'C': '#7fbfff', 'D': '#bfbfbf' };
 
 export default function Stats({ lang, isDark }) {
@@ -64,7 +64,7 @@ export default function Stats({ lang, isDark }) {
              if (!r.tiers) return;
              Object.entries(r.tiers).forEach(([tier, items]) => {
                  const score = SCORE_MAP[tier];
-                 if (!score || !items) return;
+                 if (score === undefined || !items) return;
                  items.forEach(itemId => {
                      if (!skinMap[itemId]) skinMap[itemId] = { total: 0, count: 0 };
                      skinMap[itemId].total += score;
@@ -110,16 +110,16 @@ export default function Stats({ lang, isDark }) {
 
   const activeTfIds = TIMEFRAMES.filter(t => selectedTfs[t.id]).map(t => t.id);
 
-  // Math to spread D tier further down.
-  // OP(6)=0%, S(5)=18.18%, A(4)=36.36%, B(3)=54.54%, C(2)=72.72%, D(1)=90.9%
-  const getTopPercent = (avg) => ((6.0 - avg) / 5.5) * 100;
+  // Math to map avg score (5.0 to 0.0) to top percentage with some bottom padding.
+  // Using 5.5 as divisor leaves ~9% space at the bottom for score 0.0.
+  const getTopPercent = (avg) => ((5.0 - avg) / 5.5) * 100;
   
   const getMainTierColor = (avg) => {
-    if (avg >= 5.5) return TIER_COLORS['OP'];
-    if (avg >= 4.5) return TIER_COLORS['S'];
-    if (avg >= 3.5) return TIER_COLORS['A'];
-    if (avg >= 2.5) return TIER_COLORS['B'];
-    if (avg >= 1.5) return TIER_COLORS['C'];
+    if (avg >= 4.5) return TIER_COLORS['OP'];
+    if (avg >= 3.5) return TIER_COLORS['S'];
+    if (avg >= 2.5) return TIER_COLORS['A'];
+    if (avg >= 1.5) return TIER_COLORS['B'];
+    if (avg >= 0.5) return TIER_COLORS['C'];
     return TIER_COLORS['D'];
   };
 

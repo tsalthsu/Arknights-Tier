@@ -43,3 +43,27 @@ html, body, #root {
 .exporting .tier-row:has(.tier-items:empty) {
   display: none !important;
 }
+
+/* SortableJS Styles */
+body:has(.sortable-fallback) * {
+  cursor: grabbing !important;
+}
+
+.sortable-fallback {
+  opacity: 0.85 !important; 
+  box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+  cursor: grabbing !important;
+  pointer-events: none !important;
+  transition: none !important;
+  will-change: transform; 
+  z-index: 99999 !important;
+}
+.sortable-ghost {
+  opacity: 0.4 !important;
+  filter: blur(1px);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 2px dashed #4facfe;
+}
+.sortable-drag {
+  opacity: 0;
+}
