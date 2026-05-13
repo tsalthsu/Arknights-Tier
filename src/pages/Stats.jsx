@@ -5,13 +5,13 @@ import { fetchCharacters } from '../utils/dataFetcher';
 
 const TAGS = [
   { id: 'general', label: { ko: '범용성', en: 'General', ja: '汎用性', zh: '泛用性' } },
-  { id: 'cc', label: { ko: '위기협약(CC)', en: 'CC', ja: '危機契約', zh: '危机合约' } },
-  { id: 'is', label: { ko: '로그라이크(IS)', en: 'IS', ja: 'ローグライク', zh: '集成战略' } },
-  { id: 'other', label: { ko: '그외', en: 'Other', ja: 'その他', zh: '其他' } },
+  { id: 'cc', label: { ko: '위기협약', en: 'Contingency Contract', ja: '危機契約', zh: '危机合约' } },
+  { id: 'is', label: { ko: '통합전략(로그라이크)', en: 'Integrated Strategies', ja: '統合戦略', zh: '集成战略' } },
+  { id: 'other', label: { ko: '기타', en: 'Other', ja: 'その他', zh: '其他' } },
 ];
 
 const STAR_FILTERS = [
-  { id: 'all', label: { ko: '전체 성급', en: 'All Stars', ja: '全レア', zh: '全部星级' } },
+  { id: 'all', label: { ko: '전체', en: 'All', ja: 'すべて', zh: '全部' } },
   { id: '6', label: { ko: '6성', en: '6★', ja: '★6', zh: '6★' } },
   { id: '5', label: { ko: '5성', en: '5★', ja: '★5', zh: '5★' } },
   { id: '4', label: { ko: '4성', en: '4★', ja: '★4', zh: '4★' } },
@@ -31,10 +31,10 @@ const DIST_COLORS = { 'OP': '#ec4899', 'S': '#f97316', 'A': '#eab308', 'B': '#22
 const TIER_ORDER = ['OP', 'S', 'A', 'B', 'C', 'D'];
 
 const MSG = {
-  ko: { sortScore: '점수순 정렬', sortRelease: '출시순 정렬', viewChart: '그래프 뷰 📊', viewTable: '리스트 뷰 📋', noData: '데이터가 없습니다.', avgScore: '평균 점수', votes: '투표수' },
-  en: { sortScore: 'Sort by Score', sortRelease: 'Sort by Release', viewChart: 'Chart View 📊', viewTable: 'List View 📋', noData: 'No data available.', avgScore: 'Avg Score', votes: 'Votes' },
+  ko: { sortScore: '점수순', sortRelease: '출시순', viewChart: '그래프 📊', viewTable: '리스트 📋', noData: '데이터가 없습니다.', avgScore: '평균 점수', votes: '투표수' },
+  en: { sortScore: 'Score', sortRelease: 'Release', viewChart: 'Chart 📊', viewTable: 'List 📋', noData: 'No data available.', avgScore: 'Avg Score', votes: 'Votes' },
   ja: { sortScore: 'スコア順', sortRelease: '実装順', viewChart: 'グラフ 📊', viewTable: 'リスト 📋', noData: 'データがありません。', avgScore: '平均スコア', votes: '投票数' },
-  zh: { sortScore: '按评分排序', sortRelease: '按实装排序', viewChart: '图表视图 📊', viewTable: '列表视图 📋', noData: '暂无数据。', avgScore: '平均分', votes: '票数' }
+  zh: { sortScore: '评分', sortRelease: '实装', viewChart: '图表 📊', viewTable: '列表 📋', noData: '暂无数据。', avgScore: '平均分', votes: '票数' }
 };
 
 export default function Stats({ lang, isDark }) {

@@ -23,12 +23,12 @@ export default function App() {
 
   const navLinks = [
     { path: "/", label: { en: "Make List", ko: "제작하기", ja: "作成", zh: "制作" } },
-    { path: "/gallery", label: { en: "Gallery", ko: "갤러리", ja: "ギャラリー", zh: "画廊" } },
+    { path: "/gallery", label: { en: "Records", ko: "기록", ja: "記録", zh: "记录" } },
     { path: "/stats", label: { en: "Stats", ko: "통계", ja: "統計", zh: "统计" } }
   ];
 
   const langs = { ko: '한국어', en: 'English', ja: '日本語', zh: '中文' };
-  const title = { en: "Arknights Tier List", ko: "명일방주 티어표 제작", ja: "アークナイツ ティアリスト", zh: "明日方舟 节奏榜" }[lang];
+  const title = { en: "Arknights Tier List", ko: "명일방주 티어표", ja: "アークナイツ ティアリスト", zh: "明日方舟 节奏榜" }[lang];
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-zinc-900 text-white' : 'bg-slate-100 text-slate-900'}`}>

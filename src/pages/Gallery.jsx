@@ -6,9 +6,9 @@ import CustomModal from '../components/CustomModal';
 const TAGS = [
   { id: 'all', label: { ko: '전체', en: 'All', ja: 'すべて', zh: '全部' } },
   { id: 'general', label: { ko: '범용성', en: 'General', ja: '汎用性', zh: '泛用性' } },
-  { id: 'cc', label: { ko: '위기협약(CC)', en: 'CC', ja: '危機契約', zh: '危机合约' } },
-  { id: 'is', label: { ko: '로그라이크(IS)', en: 'IS', ja: 'ローグライク', zh: '集成战略' } },
-  { id: 'other', label: { ko: '그외', en: 'Other', ja: 'その他', zh: '其他' } },
+  { id: 'cc', label: { ko: '위기협약', en: 'Contingency Contract', ja: '危機契約', zh: '危机合约' } },
+  { id: 'is', label: { ko: '통합전략(로그라이크)', en: 'Integrated Strategies', ja: '統合戦略', zh: '集成战略' } },
+  { id: 'other', label: { ko: '기타', en: 'Other', ja: 'その他', zh: '其他' } },
 ];
 
 const TIERS = ['OP', 'S', 'A', 'B', 'C', 'D'];
