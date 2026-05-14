@@ -15,10 +15,10 @@ const TIERS = ['OP', 'S', 'A', 'B', 'C', 'D'];
 const TIER_COLORS = { 'OP': '#ff7f7f', 'S': '#ffbf7f', 'A': '#ffff7f', 'B': '#7fff7f', 'C': '#7fbfff', 'D': '#bfbfbf' };
 
 const MSG = {
-  ko: { reportConfirm: '이 티어표를 신고하시겠습니까?', reported: '신고가 접수되었습니다.', clickToExpand: '▼ 클릭하여 전체 보기 ▼', reportTitle: '신고', alertTitle: '알림', cancel: '취소' },
-  en: { reportConfirm: 'Report this tier list?', reported: 'Report has been submitted.', clickToExpand: '▼ Click to expand ▼', reportTitle: 'Report', alertTitle: 'Notice', cancel: 'Cancel' },
-  ja: { reportConfirm: 'このティアリストを通報しますか？', reported: '通報を受け付けました。', clickToExpand: '▼ クリックしてすべて表示 ▼', reportTitle: '通報', alertTitle: 'お知らせ', cancel: 'キャンセル' },
-  zh: { reportConfirm: '举报此节奏榜？', reported: '举报已提交。', clickToExpand: '▼ 点击展开全部 ▼', reportTitle: '举报', alertTitle: '提示', cancel: '取消' },
+  ko: { reportConfirm: '이 티어표를 신고하시겠습니까?', reported: '신고가 접수되었습니다.', clickToExpand: '▼ 클릭하여 전체 보기 ▼', reportTitle: '신고', alertTitle: '알림', cancel: '취소', serverGlobal: '글로벌 서버', serverCN: '중국 서버', serverAll: '전체 서버', reportBtn: '🚨 신고하기' },
+  en: { reportConfirm: 'Report this tier list?', reported: 'Report has been submitted.', clickToExpand: '▼ Click to expand ▼', reportTitle: 'Report', alertTitle: 'Notice', cancel: 'Cancel', serverGlobal: 'Global', serverCN: 'CN', serverAll: 'All Servers', reportBtn: '🚨 Report' },
+  ja: { reportConfirm: 'このティアリストを通報しますか？', reported: '通報を受け付けました。', clickToExpand: '▼ クリックしてすべて表示 ▼', reportTitle: '通報', alertTitle: 'お知らせ', cancel: 'キャンセル', serverGlobal: 'グローバル', serverCN: '中国サーバー', serverAll: '全サーバー', reportBtn: '🚨 通報' },
+  zh: { reportConfirm: '举报此节奏榜？', reported: '举报已提交。', clickToExpand: '▼ 点击展开全部 ▼', reportTitle: '举报', alertTitle: '提示', cancel: '取消', serverGlobal: '国际服', serverCN: '国服', serverAll: '所有服务器', reportBtn: '🚨 举报' },
 };
 
 const LANG_MAP = { ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', zh: 'zh-CN' };
@@ -28,6 +28,7 @@ export default function Gallery({ lang, isDark }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedTag, setSelectedTag] = useState('all');
+  const [serverFilter, setServerFilter] = useState('all');
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
 
@@ -37,7 +38,7 @@ export default function Gallery({ lang, isDark }) {
 
   useEffect(() => {
     fetchGallery(true);
-  }, [selectedTag]);
+  }, [selectedTag, serverFilter]);
 
   const fetchGallery = async (reset = false) => {
     if (reset) {
@@ -49,7 +50,7 @@ export default function Gallery({ lang, isDark }) {
 
     try {
       let q = collection(db, "tier_results");
-      let constraints = [orderBy("timestamp", "desc"), limit(20)];
+      let constraints = [orderBy("timestamp", "desc"), limit(40)]; // Fetch 40 to account for local filtering
       
       if (!reset && lastDoc) {
         constraints.push(startAfter(lastDoc));
@@ -62,7 +63,11 @@ export default function Gallery({ lang, isDark }) {
       
       let filteredData = data;
       if (selectedTag !== 'all') {
-        filteredData = data.filter(d => d.tag === selectedTag);
+        filteredData = filteredData.filter(d => d.tag === selectedTag);
+      }
+      if (serverFilter !== 'all') {
+        // Handle older submissions without server field by defaulting them to 'global', or strict match
+        filteredData = filteredData.filter(d => (d.server || 'global') === serverFilter);
       }
 
       if (reset) {
@@ -72,7 +77,7 @@ export default function Gallery({ lang, isDark }) {
       }
 
       setLastDoc(snap.docs[snap.docs.length - 1]);
-      setHasMore(snap.docs.length === 20); 
+      setHasMore(snap.docs.length === 40); 
 
     } catch (e) {
       console.error(e);
@@ -125,20 +130,39 @@ export default function Gallery({ lang, isDark }) {
         cancelText={t('cancel')}
       />
 
-      <div className={`p-4 rounded-xl border flex flex-wrap gap-2 ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
-        {TAGS.map(t => (
-          <button 
-            key={t.id}
-            onClick={() => setSelectedTag(t.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedTag === t.id ? 'bg-blue-600 text-white' : (isDark ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-slate-100 hover:bg-slate-200')}`}
-          >
-            {t.label[lang]}
+      <div className={`p-4 rounded-xl border flex flex-col md:flex-row gap-4 justify-between items-start md:items-center ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <div className="flex flex-wrap gap-2">
+          {TAGS.map(t => (
+            <button 
+              key={t.id}
+              onClick={() => setSelectedTag(t.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedTag === t.id ? 'bg-blue-600 text-white' : (isDark ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-slate-100 hover:bg-slate-200')}`}
+            >
+              {t.label[lang]}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex flex-wrap gap-2 w-full md:w-auto items-center justify-between md:justify-end border-t border-zinc-200 dark:border-zinc-700 pt-3 md:pt-0 md:border-t-0">
+          <div className="flex gap-2">
+            {[
+              { id: 'all', label: t('serverAll') },
+              { id: 'global', label: t('serverGlobal') },
+              { id: 'cn', label: t('serverCN') }
+            ].map(s => (
+              <button 
+                key={s.id}
+                onClick={() => setServerFilter(s.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${serverFilter === s.id ? 'bg-indigo-600 text-white' : (isDark ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-slate-100 hover:bg-slate-200')}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => fetchGallery(true)} disabled={loading} className={`px-4 py-2 rounded-lg text-sm border ${isDark ? 'border-zinc-600 hover:bg-zinc-700' : 'border-slate-300 hover:bg-slate-100'}`}>
+            {loading ? 'Refreshing...' : 'Refresh'}
           </button>
-        ))}
-        <div className="flex-grow"></div>
-        <button onClick={() => fetchGallery(true)} disabled={loading} className={`px-4 py-2 rounded-lg text-sm border ${isDark ? 'border-zinc-600 hover:bg-zinc-700' : 'border-slate-300 hover:bg-slate-100'}`}>
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -182,7 +206,7 @@ function SubmissionCard({ sub, lang, isDark, handleReport, t }) {
           <span className="text-sm opacity-60">{formattedDate}</span>
         </div>
         <button onClick={() => handleReport(sub.id)} className="text-red-500 hover:text-red-400 text-sm flex items-center gap-1 font-medium">
-          🚨 Report
+          {t('reportBtn')}
         </button>
       </div>
       <div 

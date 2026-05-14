@@ -23,10 +23,10 @@ const DIST_COLORS = { 'OP': '#ec4899', 'S': '#f97316', 'A': '#eab308', 'B': '#22
 const TIER_ORDER = ['OP', 'S', 'A', 'B', 'C', 'D'];
 
 const MSG = {
-  ko: { sortScore: '점수순', sortRelease: '출시순', viewChart: '그래프 📊', viewTable: '리스트 📋', noData: '데이터가 없습니다.', avgScore: '현재 메타 점수', votes: '이번 달 투표수', trend: '최근 6개월 트렌드' },
-  en: { sortScore: 'Score', sortRelease: 'Release', viewChart: 'Chart 📊', viewTable: 'List 📋', noData: 'No data available.', avgScore: 'Current Meta Score', votes: 'Votes this month', trend: '6-Month Trend' },
-  ja: { sortScore: 'スコア順', sortRelease: '実装順', viewChart: 'グラフ 📊', viewTable: 'リスト 📋', noData: 'データがありません。', avgScore: '現在のスコア', votes: '今月の投票数', trend: '直近6ヶ月のトレンド' },
-  zh: { sortScore: '评分', sortRelease: '实装', viewChart: '图表 📊', viewTable: '列表 📋', noData: '暂无数据。', avgScore: '当前环境得分', votes: '本月票数', trend: '近6个月趋势' }
+  ko: { sortScore: '점수순', sortRelease: '출시순', viewChart: '그래프 📊', viewTable: '리스트 📋', noData: '데이터가 없습니다.', avgScore: '현재 메타 점수', votes: '이번 달 투표수', trend: '최근 6개월 트렌드', serverGlobal: '글로벌 서버', serverCN: '중국 서버', serverAll: '전체 서버', thRank: '순위', thChar: '캐릭터', thTierDist: '티어 분포도' },
+  en: { sortScore: 'Score', sortRelease: 'Release', viewChart: 'Chart 📊', viewTable: 'List 📋', noData: 'No data available.', avgScore: 'Current Meta Score', votes: 'Votes this month', trend: '6-Month Trend', serverGlobal: 'Global', serverCN: 'CN', serverAll: 'All Servers', thRank: '#', thChar: 'Character', thTierDist: 'Tier Distribution' },
+  ja: { sortScore: 'スコア順', sortRelease: '実装順', viewChart: 'グラフ 📊', viewTable: 'リスト 📋', noData: 'データがありません。', avgScore: '現在のスコア', votes: '今月の投票数', trend: '直近6ヶ月のトレンド', serverGlobal: 'グローバル', serverCN: '中国サーバー', serverAll: '全サーバー', thRank: '順位', thChar: 'キャラクター', thTierDist: 'ティア分布' },
+  zh: { sortScore: '评分', sortRelease: '实装', viewChart: '图表 📊', viewTable: '列表 📋', noData: '暂无数据。', avgScore: '当前环境得分', votes: '本月票数', trend: '近6个月趋势', serverGlobal: '国际服', serverCN: '国服', serverAll: '所有服务器', thRank: '排名', thChar: '干员', thTierDist: '梯队分布' }
 };
 
 // Generate an array of the last N months (e.g. ["2023-11", "2023-12", "2024-01"])
@@ -43,6 +43,7 @@ const getRecentMonths = (count) => {
 export default function Stats({ lang, isDark }) {
   const [selectedTag, setSelectedTag] = useState('general');
   const [starFilter, setStarFilter] = useState('all');
+  const [serverFilter, setServerFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: 'score', dir: 'desc' });
   const [viewMode, setViewMode] = useState('table'); // Default to table to show off the cool sparklines
@@ -57,10 +58,10 @@ export default function Stats({ lang, isDark }) {
   const t = (key) => MSG[lang]?.[key] || MSG.en[key];
 
   useEffect(() => {
-    loadData(selectedTag);
-  }, [selectedTag]);
+    loadData(selectedTag, serverFilter);
+  }, [selectedTag, serverFilter]);
 
-  const loadData = async (tag) => {
+  const loadData = async (tag, server) => {
     setLoading(true);
     try {
       const chars = await fetchCharacters();
@@ -74,6 +75,9 @@ export default function Stats({ lang, isDark }) {
       
       // Group by YYYY-MM
       results.forEach(r => {
+         // Apply Server Filter
+         if (server !== 'all' && (r.server || 'global') !== server) return;
+
          const date = new Date(r.timestamp);
          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
          
@@ -255,7 +259,23 @@ export default function Stats({ lang, isDark }) {
         </div>
         
         <div className="flex flex-col gap-3 xl:items-end justify-between">
-            <div className="flex flex-wrap gap-2 items-center justify-start xl:justify-end border-t pt-3 w-full md:border-t-0 md:pt-0">
+            <div className="flex flex-wrap gap-2 items-center justify-start xl:justify-end">
+                <span className={`text-sm font-bold opacity-70 mr-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Server:</span>
+                {[
+                  { id: 'all', label: t('serverAll') },
+                  { id: 'global', label: t('serverGlobal') },
+                  { id: 'cn', label: t('serverCN') }
+                ].map(s => (
+                  <button 
+                    key={s.id}
+                    onClick={() => setServerFilter(s.id)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${serverFilter === s.id ? 'bg-emerald-600 text-white shadow-sm' : (isDark ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-slate-100 hover:bg-slate-200')}`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+            </div>
+            <div className="flex flex-wrap gap-2 items-center justify-start xl:justify-end border-t pt-3 w-full xl:border-t-0 xl:pt-0">
                 <button 
                   onClick={() => setViewMode('chart')}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${viewMode === 'chart' ? 'bg-indigo-600 text-white shadow-md' : (isDark ? 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700')}`}
@@ -393,10 +413,10 @@ export default function Stats({ lang, isDark }) {
                     <thead>
                         <tr className={`text-sm ${isDark ? 'bg-zinc-900/50 text-zinc-400' : 'bg-slate-50 text-slate-500'}`}>
                             <th className="p-4 font-semibold w-12">#</th>
-                            <th className="p-4 font-semibold min-w-[150px]">Character</th>
+                            <th className="p-4 font-semibold min-w-[150px]">{t('thChar')}</th>
                             <th className="p-4 font-semibold w-[150px] text-center">{t('trend')}</th>
                             <th className="p-4 font-semibold text-right min-w-[100px]">{t('avgScore')}</th>
-                            <th className="p-4 font-semibold w-[250px] hidden sm:table-cell">Tier Distribution</th>
+                            <th className="p-4 font-semibold w-[250px] hidden sm:table-cell">{t('thTierDist')}</th>
                         </tr>
                     </thead>
                     <tbody className="text-sm">

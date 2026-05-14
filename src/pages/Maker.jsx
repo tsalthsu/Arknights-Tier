@@ -24,10 +24,10 @@ const TAGS = [
 ];
 
 const MSG = {
-  ko: { load3: '3성 불러오기', load4: '4성 불러오기', load5: '5성 불러오기', load6: '6성 불러오기', loadAll: '전체 불러오기', hideNames: '이름 숨기기', showNames: '이름 표시', reset: '초기화', submit: '제출', pool: '대기열', resetConfirm: '모든 배치를 초기화하시겠습니까?', submitConfirm: '최소 5개 이상의 캐릭터를 배치해주세요.', submitSuccess: '제출이 완료되었습니다!', submitTitle: '티어표 제출', submitDesc: '태그를 선택해주세요:', cancel: '취소', loadSuccess: '불러오기 완료!', errorTitle: '오류 발생', alertTitle: '알림', confirmTitle: '확인', sortRelease: '출시순', sortName: '이름순', sortStar: '성급순' },
-  en: { load3: 'Load 3★', load4: 'Load 4★', load5: 'Load 5★', load6: 'Load 6★', loadAll: 'Load All', hideNames: 'Hide Names', showNames: 'Show Names', reset: 'Reset', submit: 'Submit', pool: 'Unranked Pool', resetConfirm: 'Reset all?', submitConfirm: 'Please place at least 5 characters.', submitSuccess: 'Submitted!', submitTitle: 'Submit Tier List', submitDesc: 'Select a category tag:', cancel: 'Cancel', loadSuccess: 'Load complete!', errorTitle: 'Error', alertTitle: 'Notice', confirmTitle: 'Confirm', sortRelease: 'Release', sortName: 'Name', sortStar: 'Rarity' },
-  ja: { load3: '★3 読込', load4: '★4 読込', load5: '★5 読込', load6: '★6 読込', loadAll: '全て読込', hideNames: '名前非表示', showNames: '名前表示', reset: 'リセット', submit: '提出', pool: '未配置', resetConfirm: 'すべてリセットしますか？', submitConfirm: '5つ以上のキャラクターを配置してください。', submitSuccess: '提出しました！', submitTitle: 'ティアリスト提出', submitDesc: 'タグを選択してください:', cancel: 'キャンセル', loadSuccess: '読込完了！', errorTitle: 'エラー', alertTitle: 'お知らせ', confirmTitle: '確認', sortRelease: '実装順', sortName: '名前順', sortStar: 'レア順' },
-  zh: { load3: '加载 3★', load4: '加载 4★', load5: '加载 5★', load6: '加载 6★', loadAll: '加载全部', hideNames: '隐藏名称', showNames: '显示名称', reset: '重置', submit: '提交', pool: '未分类', resetConfirm: '重置所有？', submitConfirm: '请至少放置5个角色。', submitSuccess: '提交成功！', submitTitle: '提交节奏榜', submitDesc: '请选择标签:', cancel: '取消', loadSuccess: '加载完成！', errorTitle: '错误', alertTitle: '提示', confirmTitle: '确认', sortRelease: '实装顺序', sortName: '名称顺序', sortStar: '星级顺序' },
+  ko: { load3: '3성 불러오기', load4: '4성 불러오기', load5: '5성 불러오기', load6: '6성 불러오기', loadAll: '전체 불러오기', hideNames: '이름 숨기기', showNames: '이름 표시', reset: '초기화', submit: '제출', pool: '대기열', resetConfirm: '모든 배치를 초기화하시겠습니까?', submitConfirm: '최소 5개 이상의 캐릭터를 배치해주세요.', submitSuccess: '제출이 완료되었습니다!', submitTitle: '티어표 제출', submitDesc: '태그와 서버를 선택해주세요:', cancel: '취소', loadSuccess: '불러오기 완료!', errorTitle: '오류 발생', alertTitle: '알림', confirmTitle: '확인', sortRelease: '출시순', sortName: '이름순', sortStar: '성급순', serverGlobal: '글로벌 서버 (한국 포함)', serverCN: '중국 서버 (본섭)' },
+  en: { load3: 'Load 3★', load4: 'Load 4★', load5: 'Load 5★', load6: 'Load 6★', loadAll: 'Load All', hideNames: 'Hide Names', showNames: 'Show Names', reset: 'Reset', submit: 'Submit', pool: 'Unranked Pool', resetConfirm: 'Reset all?', submitConfirm: 'Please place at least 5 characters.', submitSuccess: 'Submitted!', submitTitle: 'Submit Tier List', submitDesc: 'Select category and server:', cancel: 'Cancel', loadSuccess: 'Load complete!', errorTitle: 'Error', alertTitle: 'Notice', confirmTitle: 'Confirm', sortRelease: 'Release', sortName: 'Name', sortStar: 'Rarity', serverGlobal: 'Global (EN/KR/JP)', serverCN: 'CN Server' },
+  ja: { load3: '★3 読込', load4: '★4 読込', load5: '★5 読込', load6: '★6 読込', loadAll: '全て読込', hideNames: '名前非表示', showNames: '名前表示', reset: 'リセット', submit: '提出', pool: '未配置', resetConfirm: 'すべてリセットしますか？', submitConfirm: '5つ以上のキャラクターを配置してください。', submitSuccess: '提出しました！', submitTitle: 'ティアリスト提出', submitDesc: 'タグとサーバーを選択してください:', cancel: 'キャンセル', loadSuccess: '読込完了！', errorTitle: 'エラー', alertTitle: 'お知らせ', confirmTitle: '確認', sortRelease: '実装順', sortName: '名前順', sortStar: 'レア順', serverGlobal: 'グローバル (EN/KR/JP)', serverCN: '中国サーバー' },
+  zh: { load3: '加载 3★', load4: '加载 4★', load5: '加载 5★', load6: '加载 6★', loadAll: '加载全部', hideNames: '隐藏名称', showNames: '显示名称', reset: '重置', submit: '提交', pool: '未分类', resetConfirm: '重置所有？', submitConfirm: '请至少放置5个角色。', submitSuccess: '提交成功！', submitTitle: '提交节奏榜', submitDesc: '请选择标签和服务器:', cancel: '取消', loadSuccess: '加载完成！', errorTitle: '错误', alertTitle: '提示', confirmTitle: '确认', sortRelease: '实装顺序', sortName: '名称顺序', sortStar: '星级顺序', serverGlobal: '国际服 (EN/KR/JP)', serverCN: '国服 (CN)' },
 };
 
 export default function Maker({ lang, isDark }) {
@@ -56,6 +56,7 @@ export default function Maker({ lang, isDark }) {
   const [loading, setLoading] = useState(false);
   const [submitModal, setSubmitModal] = useState(false);
   const [selectedTag, setSelectedTag] = useState('general');
+  const [selectedServer, setSelectedServer] = useState('global');
   const [sortConfig, setSortConfig] = useState({ key: 'name', dir: 'asc' });
 
   const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
@@ -152,6 +153,7 @@ export default function Maker({ lang, isDark }) {
       batch.set(newResultRef, {
         timestamp: new Date().toISOString(),
         tag: selectedTag,
+        server: selectedServer,
         tiers: tierData,
         reports: 0
       });
@@ -242,7 +244,7 @@ export default function Maker({ lang, isDark }) {
               setList={(newState) => {
                 setTiers(prev => prev.map(t => t.id === tier.id ? { ...t, items: newState } : t));
               }}
-              className={`flex-1 p-2 flex flex-wrap content-start gap-2 ${isDark ? 'hover:bg-zinc-700/30' : 'hover:bg-slate-50/50'} transition-colors`}
+              className={`flex-1 p-2 flex flex-wrap content-start items-start gap-2 ${isDark ? 'hover:bg-zinc-700/30' : 'hover:bg-slate-50/50'} transition-colors`}
             >
               {tier.items.map(item => (
                 <CharacterCard key={item.id} item={item} showNames={showNames} lang={lang} isDark={isDark} />
@@ -295,7 +297,9 @@ export default function Maker({ lang, isDark }) {
           <div className={`max-w-md w-full p-6 rounded-2xl shadow-2xl ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white'}`}>
             <h2 className="text-xl font-bold mb-4">{t('submitTitle')}</h2>
             <p className="mb-4 text-sm opacity-80">{t('submitDesc')}</p>
+            
             <div className="flex flex-col gap-2 mb-6">
+              <span className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Category</span>
               {TAGS.map(t => (
                 <label key={t.id} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition ${selectedTag === t.id ? 'border-blue-500 bg-blue-500/10' : (isDark ? 'border-zinc-700 hover:bg-zinc-800' : 'border-slate-200 hover:bg-slate-50')}`}>
                   <input type="radio" name="tag" value={t.id} checked={selectedTag === t.id} onChange={(e) => setSelectedTag(e.target.value)} className="w-4 h-4 text-blue-600"/>
@@ -303,6 +307,19 @@ export default function Maker({ lang, isDark }) {
                 </label>
               ))}
             </div>
+
+            <div className="flex flex-col gap-2 mb-6">
+              <span className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Server</span>
+              <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition ${selectedServer === 'global' ? 'border-blue-500 bg-blue-500/10' : (isDark ? 'border-zinc-700 hover:bg-zinc-800' : 'border-slate-200 hover:bg-slate-50')}`}>
+                  <input type="radio" name="server" value="global" checked={selectedServer === 'global'} onChange={(e) => setSelectedServer(e.target.value)} className="w-4 h-4 text-blue-600"/>
+                  <span className="font-medium">{t('serverGlobal')}</span>
+              </label>
+              <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition ${selectedServer === 'cn' ? 'border-blue-500 bg-blue-500/10' : (isDark ? 'border-zinc-700 hover:bg-zinc-800' : 'border-slate-200 hover:bg-slate-50')}`}>
+                  <input type="radio" name="server" value="cn" checked={selectedServer === 'cn'} onChange={(e) => setSelectedServer(e.target.value)} className="w-4 h-4 text-blue-600"/>
+                  <span className="font-medium">{t('serverCN')}</span>
+              </label>
+            </div>
+
             <div className="flex justify-end gap-3">
               <button onClick={() => setSubmitModal(false)} className={`px-4 py-2 rounded border ${isDark ? 'border-zinc-700 hover:bg-zinc-800' : 'border-slate-300 hover:bg-slate-100'}`}>{t('cancel')}</button>
               <button onClick={handleSubmit} disabled={loading} className="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50">
