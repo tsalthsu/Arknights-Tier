@@ -6,23 +6,18 @@ const URLS = {
   release: 'https://raw.githubusercontent.com/ArknightsAssets/releasever/master/releasever.json'
 };
 
-const EXCLUDE_SET = new Set([
-  'Mechanist', 'Misery', 'Outcast', 'Pith', 'Scout', 'Sharp', 'Stormeye', 'Touch', 'Ulst', 'Tulip'
-]);
-
 const EXCLUDE_IDS = new Set([
-  'char_614_acsupo', 'char_617_sharp2', 'char_616_pithst', 
-  'char_505_rcast', 'char_514_rdfend', 'char_506_rmedic', 
-  'char_504_rguard', 'char_507_rsnipe'
+  'char_615_acspec', 'char_612_accast', 'char_614_acsupo', 
+  'char_609_acguad', 'char_611_acnipe', 'char_613_acmedc', 
+  'char_608_acpion', 'char_604_ccast', 'char_602_cdfend', 
+  'char_601_cguard', 'char_605_cmedic', 'char_603_csnipe', 
+  'char_607_cspec', 'char_606_csuppo', 'char_600_cpione',
+  'char_617_sharp2', 'char_610_acfend'
 ]);
-
-const isReserveOperator = (s) => /^Reserve Operator\s*-\s*/i.test(s || '');
 
 const isExcluded = (c, key) => {
   if (EXCLUDE_IDS.has(key)) return true;
-  const app = (c.appellation || '').trim();
-  const nm = (c.name || '').trim();
-  return EXCLUDE_SET.has(app) || EXCLUDE_SET.has(nm) || isReserveOperator(app) || isReserveOperator(nm);
+  return false;
 };
 
 const isTargetRarity = (r) => {

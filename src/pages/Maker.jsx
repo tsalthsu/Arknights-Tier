@@ -312,8 +312,19 @@ const CharacterCard = memo(forwardRef(({ item, showNames, lang, isDark }, ref) =
     }
   };
 
-  const getNameBgColor = (star) => {
-    switch (star) {
+  const getNameBgColor = (item) => {
+    const IS_EXCLUSIVE_IDS = new Set([
+      'char_507_rsnipe', 'char_504_rguard', 'char_506_rmedic', 
+      'char_514_rdefend', 'char_514_rdfend', 'char_505_rcast', 
+      'char_513_apionr', 'char_510_amedic', 'char_511_asnipe', 
+      'char_508_aguard', 'char_509_acast'
+    ]);
+
+    if (IS_EXCLUSIVE_IDS.has(item.id)) {
+      return isDark ? 'bg-zinc-800/80 text-zinc-300' : 'bg-slate-700 text-slate-100';
+    }
+
+    switch (item.star) {
       case 6: return isDark ? 'bg-orange-900/40 text-orange-200' : 'bg-orange-100 text-orange-800';
       case 5: return isDark ? 'bg-yellow-900/40 text-yellow-200' : 'bg-yellow-100 text-yellow-800';
       case 4: return isDark ? 'bg-purple-900/40 text-purple-200' : 'bg-purple-100 text-purple-800';
@@ -345,7 +356,7 @@ const CharacterCard = memo(forwardRef(({ item, showNames, lang, isDark }, ref) =
         />
         <div className="absolute top-0 right-0 bg-black/60 text-yellow-400 text-[10px] px-1 font-bold rounded-bl">{item.star}★</div>
       </div>
-      {showNames && <div className={`text-center py-1 px-0.5 text-[10px] font-semibold truncate ${getNameBgColor(item.star)}`}>{displayName}</div>}
+      {showNames && <div className={`text-center py-1 px-0.5 text-[10px] font-semibold truncate ${getNameBgColor(item)}`}>{displayName}</div>}
     </div>
   );
 }));
