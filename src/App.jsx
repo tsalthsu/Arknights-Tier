@@ -3,9 +3,18 @@ import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Maker from "./pages/Maker";
 import Gallery from "./pages/Gallery";
 import Stats from "./pages/Stats";
+import View from "./pages/View";
 import logoImg from "./assets/ri-logo.webp";
+import { auth } from "./firebase";
+import { signInAnonymously } from "firebase/auth";
 
 export default function App() {
+  useEffect(() => {
+    signInAnonymously(auth).catch((error) => {
+      console.error("Anonymous auth failed:", error);
+    });
+  }, []);
+
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   useEffect(() => {
     localStorage.setItem('theme', theme);
@@ -88,6 +97,7 @@ export default function App() {
           <Route path="/" element={<Maker lang={lang} isDark={isDark} />} />
           <Route path="/gallery" element={<Gallery lang={lang} isDark={isDark} />} />
           <Route path="/stats" element={<Stats lang={lang} isDark={isDark} />} />
+          <Route path="/view/:id" element={<View lang={lang} isDark={isDark} />} />
         </Routes>
       </main>
 

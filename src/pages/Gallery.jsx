@@ -15,10 +15,10 @@ const TIERS = ['OP', 'S', 'A', 'B', 'C', 'D'];
 const TIER_COLORS = { 'OP': '#ff7f7f', 'S': '#ffbf7f', 'A': '#ffff7f', 'B': '#7fff7f', 'C': '#7fbfff', 'D': '#bfbfbf' };
 
 const MSG = {
-  ko: { reportConfirm: '이 티어표를 신고하시겠습니까?', reported: '신고가 접수되었습니다.', clickToExpand: '▼ 클릭하여 전체 보기 ▼', reportTitle: '신고', alertTitle: '알림', cancel: '취소', serverGlobal: '글로벌 서버', serverCN: '중국 서버', serverAll: '전체 서버', reportBtn: '🚨 신고하기' },
-  en: { reportConfirm: 'Report this tier list?', reported: 'Report has been submitted.', clickToExpand: '▼ Click to expand ▼', reportTitle: 'Report', alertTitle: 'Notice', cancel: 'Cancel', serverGlobal: 'Global', serverCN: 'CN', serverAll: 'All Servers', reportBtn: '🚨 Report' },
-  ja: { reportConfirm: 'このティアリストを通報しますか？', reported: '通報を受け付けました。', clickToExpand: '▼ クリックしてすべて表示 ▼', reportTitle: '通報', alertTitle: 'お知らせ', cancel: 'キャンセル', serverGlobal: 'グローバル', serverCN: '中国サーバー', serverAll: '全サーバー', reportBtn: '🚨 通報' },
-  zh: { reportConfirm: '举报此节奏榜？', reported: '举报已提交。', clickToExpand: '▼ 点击展开全部 ▼', reportTitle: '举报', alertTitle: '提示', cancel: '取消', serverGlobal: '国际服', serverCN: '国服', serverAll: '所有服务器', reportBtn: '🚨 举报' },
+  ko: { reportConfirm: '이 티어표를 신고하시겠습니까?', reported: '신고가 접수되었습니다.', clickToExpand: '▼ 클릭하여 전체 보기 ▼', reportTitle: '신고', alertTitle: '알림', cancel: '취소', serverGlobal: '글로벌 서버', serverCN: '중국 서버', serverAll: '전체 서버', reportBtn: '🚨 신고하기', alreadyReported: '이미 신고한 게시물입니다.' },
+  en: { reportConfirm: 'Report this tier list?', reported: 'Report has been submitted.', clickToExpand: '▼ Click to expand ▼', reportTitle: 'Report', alertTitle: 'Notice', cancel: 'Cancel', serverGlobal: 'Global', serverCN: 'CN', serverAll: 'All Servers', reportBtn: '🚨 Report', alreadyReported: 'You have already reported this.' },
+  ja: { reportConfirm: 'このティアリストを通報しますか？', reported: '通報を受け付けました。', clickToExpand: '▼ クリックしてすべて表示 ▼', reportTitle: '通報', alertTitle: 'お知らせ', cancel: 'キャンセル', serverGlobal: 'グローバル', serverCN: '中国サーバー', serverAll: '全サーバー', reportBtn: '🚨 通報', alreadyReported: 'すでに通報済みです。' },
+  zh: { reportConfirm: '举报此节奏榜？', reported: '举报已提交。', clickToExpand: '▼ 点击展开全部 ▼', reportTitle: '举报', alertTitle: '提示', cancel: '取消', serverGlobal: '国际服', serverCN: '国服', serverAll: '所有服务器', reportBtn: '🚨 举报', alreadyReported: '您已经举报过此内容。' },
 };
 
 const LANG_MAP = { ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', zh: 'zh-CN' };
@@ -102,11 +102,21 @@ export default function Gallery({ lang, isDark }) {
   };
 
   const handleReport = (id) => {
+    const reportedItems = JSON.parse(localStorage.getItem('reportedItems') || '[]');
+    if (reportedItems.includes(id)) {
+      showAlert(t('alertTitle'), t('alreadyReported'));
+      return;
+    }
+
     showConfirm(t('reportTitle'), t('reportConfirm'), async () => {
       try {
         await updateDoc(doc(db, "tier_results", id), {
           reports: increment(1)
         });
+        
+        reportedItems.push(id);
+        localStorage.setItem('reportedItems', JSON.stringify(reportedItems));
+
         showAlert(t('alertTitle'), t('reported'));
         setSubmissions(prev => prev.map(s => s.id === id ? { ...s, reports: (s.reports || 0) + 1 } : s));
       } catch (e) {

@@ -21,8 +21,9 @@ async function waitForImages(node) {
 export default function ExportPNG({
   targetId = 'tierboard',
   fileName = 'tierlist',
-  scale = 3,
+  scale = 2,
   bgColor = '#0b0b0d',
+  className = "px-4 py-2 rounded font-bold bg-blue-600 text-white hover:bg-blue-500"
 }) {
   const busy = useRef(false);
 
@@ -56,11 +57,13 @@ export default function ExportPNG({
       const dataUrl = await domtoimage.toPng(node, {
         bgcolor: bgColor,
         cacheBust: true,
-        // transform 제거 → 깨짐 방지
         width: width * scale,
         height: height * scale,
         style: {
-          imageRendering: 'auto',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          width: `${width}px`,
+          height: `${height}px`,
         },
         filter: (el) => el?.getAttribute?.('data-export-hide') !== 'true',
       });
@@ -84,7 +87,7 @@ export default function ExportPNG({
     <button
       type="button"
       onClick={handleExport}
-      className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+      className={className}
     >
       PNG
     </button>

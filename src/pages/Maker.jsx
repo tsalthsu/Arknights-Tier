@@ -1,9 +1,10 @@
 import React, { useState, useEffect, memo, forwardRef } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 import { fetchCharacters } from '../utils/dataFetcher';
-import { db } from '../firebase';
-import { collection, doc, increment, getDoc, writeBatch } from 'firebase/firestore';
+import { db, auth } from '../firebase';
+import { collection, doc, increment, getDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import CustomModal from '../components/CustomModal';
+import ExportPNG from '../components/ExportPNG';
 
 const INITIAL_TIERS = [
   { id: 'OP', color: '#ff7f7f', items: [] },
@@ -24,11 +25,30 @@ const TAGS = [
 ];
 
 const MSG = {
-  ko: { load3: '3성 불러오기', load4: '4성 불러오기', load5: '5성 불러오기', load6: '6성 불러오기', loadAll: '전체 불러오기', hideNames: '이름 숨기기', showNames: '이름 표시', reset: '초기화', submit: '제출', pool: '대기열', resetConfirm: '모든 배치를 초기화하시겠습니까?', submitConfirm: '최소 5개 이상의 캐릭터를 배치해주세요.', submitSuccess: '제출이 완료되었습니다!', submitTitle: '티어표 제출', submitDesc: '태그와 서버를 선택해주세요:', cancel: '취소', loadSuccess: '불러오기 완료!', errorTitle: '오류 발생', alertTitle: '알림', confirmTitle: '확인', sortRelease: '출시순', sortName: '이름순', sortStar: '성급순', serverGlobal: '글로벌 서버 (한국 포함)', serverCN: '중국 서버 (본섭)' },
-  en: { load3: 'Load 3★', load4: 'Load 4★', load5: 'Load 5★', load6: 'Load 6★', loadAll: 'Load All', hideNames: 'Hide Names', showNames: 'Show Names', reset: 'Reset', submit: 'Submit', pool: 'Unranked Pool', resetConfirm: 'Reset all?', submitConfirm: 'Please place at least 5 characters.', submitSuccess: 'Submitted!', submitTitle: 'Submit Tier List', submitDesc: 'Select category and server:', cancel: 'Cancel', loadSuccess: 'Load complete!', errorTitle: 'Error', alertTitle: 'Notice', confirmTitle: 'Confirm', sortRelease: 'Release', sortName: 'Name', sortStar: 'Rarity', serverGlobal: 'Global (EN/KR/JP)', serverCN: 'CN Server' },
-  ja: { load3: '★3 読込', load4: '★4 読込', load5: '★5 読込', load6: '★6 読込', loadAll: '全て読込', hideNames: '名前非表示', showNames: '名前表示', reset: 'リセット', submit: '提出', pool: '未配置', resetConfirm: 'すべてリセットしますか？', submitConfirm: '5つ以上のキャラクターを配置してください。', submitSuccess: '提出しました！', submitTitle: 'ティアリスト提出', submitDesc: 'タグとサーバーを選択してください:', cancel: 'キャンセル', loadSuccess: '読込完了！', errorTitle: 'エラー', alertTitle: 'お知らせ', confirmTitle: '確認', sortRelease: '実装順', sortName: '名前順', sortStar: 'レア順', serverGlobal: 'グローバル (EN/KR/JP)', serverCN: '中国サーバー' },
-  zh: { load3: '加载 3★', load4: '加载 4★', load5: '加载 5★', load6: '加载 6★', loadAll: '加载全部', hideNames: '隐藏名称', showNames: '显示名称', reset: '重置', submit: '提交', pool: '未分类', resetConfirm: '重置所有？', submitConfirm: '请至少放置5个角色。', submitSuccess: '提交成功！', submitTitle: '提交节奏榜', submitDesc: '请选择标签和服务器:', cancel: '取消', loadSuccess: '加载完成！', errorTitle: '错误', alertTitle: '提示', confirmTitle: '确认', sortRelease: '实装顺序', sortName: '名称顺序', sortStar: '星级顺序', serverGlobal: '国际服 (EN/KR/JP)', serverCN: '国服 (CN)' },
+  ko: { load3: '3성 불러오기', load4: '4성 불러오기', load5: '5성 불러오기', load6: '6성 불러오기', loadAll: '전체 불러오기', hideNames: '이름 숨기기', showNames: '이름 표시', reset: '초기화', submit: '제출', pool: '대기열', resetConfirm: '모든 배치를 초기화하시겠습니까?', submitConfirm: '최소 5개 이상의 캐릭터를 배치해주세요.', submitSuccess: '제출이 완료되었습니다!', submitTitle: '티어표 제출', submitDesc: '태그와 서버를 선택해주세요:', cancel: '취소', loadSuccess: '불러오기 완료!', errorTitle: '오류 발생', alertTitle: '알림', confirmTitle: '확인', sortRelease: '출시순', sortName: '이름순', sortStar: '성급순', serverGlobal: '글로벌 서버 (한국 포함)', serverCN: '중국 서버 (본섭)', rateLimitErr: '제출이 너무 빠릅니다. 1분 후에 다시 시도해주세요.', copyLink: '링크 복사', linkCopied: '링크가 복사되었습니다!' },
+  en: { load3: 'Load 3★', load4: 'Load 4★', load5: 'Load 5★', load6: 'Load 6★', loadAll: 'Load All', hideNames: 'Hide Names', showNames: 'Show Names', reset: 'Reset', submit: 'Submit', pool: 'Unranked Pool', resetConfirm: 'Reset all?', submitConfirm: 'Please place at least 5 characters.', submitSuccess: 'Submitted!', submitTitle: 'Submit Tier List', submitDesc: 'Select category and server:', cancel: 'Cancel', loadSuccess: 'Load complete!', errorTitle: 'Error', alertTitle: 'Notice', confirmTitle: 'Confirm', sortRelease: 'Release', sortName: 'Name', sortStar: 'Rarity', serverGlobal: 'Global (EN/KR/JP)', serverCN: 'CN Server', rateLimitErr: 'Submitting too fast. Please try again in 1 minute.', copyLink: 'Copy Link', linkCopied: 'Link copied!' },
+  ja: { load3: '★3 読込', load4: '★4 読込', load5: '★5 読込', load6: '★6 読込', loadAll: '全て読込', hideNames: '名前非表示', showNames: '名前表示', reset: 'リセット', submit: '提出', pool: '未配置', resetConfirm: 'すべてリセットしますか？', submitConfirm: '5つ以上のキャラクターを配置してください。', submitSuccess: '提出しました！', submitTitle: 'ティアリスト提出', submitDesc: 'タグとサーバーを選択してください:', cancel: 'キャンセル', loadSuccess: '読込完了！', errorTitle: 'エラー', alertTitle: 'お知らせ', confirmTitle: '確認', sortRelease: '実装順', sortName: '名前順', sortStar: 'レア順', serverGlobal: 'グローバル (EN/KR/JP)', serverCN: '中国サーバー', rateLimitErr: '提出が早すぎます。1分後にもう一度お試しください。', copyLink: 'リンクをコピー', linkCopied: 'コピーしました！' },
+  zh: { load3: '加载 3★', load4: '加载 4★', load5: '加载 5★', load6: '加载 6★', loadAll: '加载全部', hideNames: '隐藏名称', showNames: '显示名称', reset: '重置', submit: '提交', pool: '未分类', resetConfirm: '重置所有？', submitConfirm: '请至少放置5个角色。', submitSuccess: '提交成功！', submitTitle: '提交节奏榜', submitDesc: '请选择标签和服务器:', cancel: '取消', loadSuccess: '加载完成！', errorTitle: '错误', alertTitle: '提示', confirmTitle: '确认', sortRelease: '实装顺序', sortName: '名称顺序', sortStar: '星级顺序', serverGlobal: '国际服 (EN/KR/JP)', serverCN: '国服 (CN)', rateLimitErr: '提交过于频繁，请1分钟后再试。', copyLink: '复制链接', linkCopied: '链接已复制！' },
 };
+
+function CopyButton({ shareLink, t }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button 
+      onClick={handleCopy}
+      className={`px-3 py-2 text-white rounded text-sm whitespace-nowrap transition-colors ${copied ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-500'}`}
+    >
+      {copied ? t('linkCopied') : t('copyLink')}
+    </button>
+  );
+}
 
 export default function Maker({ lang, isDark }) {
   const [tiers, setTiers] = useState(() => {
@@ -147,16 +167,25 @@ export default function Maker({ lang, isDark }) {
 
     setLoading(true);
     try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error("인증 정보를 불러오지 못했습니다. 페이지를 새로고침해주세요.");
+
       const batch = writeBatch(db);
 
       const newResultRef = doc(collection(db, "tier_results"));
       batch.set(newResultRef, {
+        uid: uid,
         timestamp: new Date().toISOString(),
         tag: selectedTag,
         server: selectedServer,
         tiers: tierData,
         reports: 0
       });
+
+      const userRecordRef = doc(db, "user_records", uid);
+      batch.set(userRecordRef, {
+        lastSubmitTime: serverTimestamp()
+      }, { merge: true });
 
       const statsRef = doc(db, "statistics", `summary_${selectedTag}`);
       const statsDoc = await getDoc(statsRef);
@@ -186,10 +215,25 @@ export default function Maker({ lang, isDark }) {
       await batch.commit();
 
       setSubmitModal(false);
-      showAlert(t('alertTitle'), t('submitSuccess'));
+
+      const shareLink = `${window.location.origin}/view/${newResultRef.id}`;
+      showAlert(
+        null, 
+        <div className="flex flex-col gap-3">
+          <span className="font-bold text-lg text-emerald-500">{t('submitSuccess')}</span>
+          <div className="flex items-center gap-2">
+            <input type="text" readOnly value={shareLink} className={`flex-1 p-2 text-sm rounded border focus:outline-none ${isDark ? 'bg-zinc-800 border-zinc-600 text-zinc-300' : 'bg-slate-50 border-slate-300'}`} />
+            <CopyButton shareLink={shareLink} t={t} />
+          </div>
+        </div>
+      );
     } catch (e) {
       console.error(e);
-      showAlert(t('errorTitle'), "Error: " + e.message);
+      if (e.code === 'permission-denied') {
+        showAlert(t('errorTitle'), t('rateLimitErr'));
+      } else {
+        showAlert(t('errorTitle'), "Error: " + e.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -219,39 +263,42 @@ export default function Maker({ lang, isDark }) {
           {showNames ? t('hideNames') : t('showNames')}
         </button>
         <button onClick={handleReset} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-500">{t('reset')}</button>
+        <ExportPNG targetId="tierboard" fileName={`tierlist_${new Date().getTime()}`} bgColor={isDark ? '#27272a' : '#f8fafc'} />
         <button onClick={() => setSubmitModal(true)} className="px-6 py-2 rounded bg-emerald-600 font-bold text-white hover:bg-emerald-500">{t('submit')}</button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {tiers.map((tier) => (
-          <div key={tier.id} className={`flex min-h-[120px] rounded-lg border overflow-hidden ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-slate-300'}`}>
-            <div className="w-24 shrink-0 flex items-center justify-center font-black text-3xl text-zinc-900 border-r border-black/10" style={{ backgroundColor: tier.color }}>
-              {tier.id}
+      <div className="w-full overflow-x-auto pb-4">
+        <div id="tierboard" className="flex flex-col gap-2 p-4 rounded-xl min-w-[800px] w-full mx-auto border border-transparent">
+          {tiers.map((tier) => (
+            <div key={tier.id} className={`tier-row flex min-h-[120px] rounded-lg border overflow-hidden ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-slate-300'}`}>
+              <div className="w-24 shrink-0 flex items-center justify-center font-black text-3xl text-zinc-900 border-r border-black/10" style={{ backgroundColor: tier.color }}>
+                {tier.id}
+              </div>
+              <ReactSortable
+                group="shared"
+                animation={150}
+                delay={0}
+                scroll={true}
+                scrollSensitivity={150}
+                scrollSpeed={20}
+                forceFallback={true}
+                fallbackClass="sortable-fallback"
+                ghostClass="sortable-ghost"
+                dragClass="sortable-drag"
+                fallbackOnBody={true}
+                list={tier.items}
+                setList={(newState) => {
+                  setTiers(prev => prev.map(t => t.id === tier.id ? { ...t, items: newState } : t));
+                }}
+                className={`tier-items flex-1 p-2 flex flex-wrap content-start items-start gap-2 ${isDark ? 'hover:bg-zinc-700/30' : 'hover:bg-slate-50/50'} transition-colors`}
+              >
+                {tier.items.map(item => (
+                  <CharacterCard key={item.id} item={item} showNames={showNames} lang={lang} isDark={isDark} />
+                ))}
+              </ReactSortable>
             </div>
-            <ReactSortable
-              group="shared"
-              animation={150}
-              delay={0}
-              scroll={true}
-              scrollSensitivity={150}
-              scrollSpeed={20}
-              forceFallback={true}
-              fallbackClass="sortable-fallback"
-              ghostClass="sortable-ghost"
-              dragClass="sortable-drag"
-              fallbackOnBody={true}
-              list={tier.items}
-              setList={(newState) => {
-                setTiers(prev => prev.map(t => t.id === tier.id ? { ...t, items: newState } : t));
-              }}
-              className={`flex-1 p-2 flex flex-wrap content-start items-start gap-2 ${isDark ? 'hover:bg-zinc-700/30' : 'hover:bg-slate-50/50'} transition-colors`}
-            >
-              {tier.items.map(item => (
-                <CharacterCard key={item.id} item={item} showNames={showNames} lang={lang} isDark={isDark} />
-              ))}
-            </ReactSortable>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div className={`mt-4 p-4 rounded-xl border min-h-[200px] ${isDark ? 'bg-zinc-800/30 border-zinc-700' : 'bg-white border-slate-300'}`}>
@@ -390,7 +437,7 @@ const CharacterCard = memo(forwardRef(({ item, showNames, lang, isDark }, ref) =
           onDragStart={(e) => e.preventDefault()}
           onError={handleError}
         />
-        <div className="absolute top-0 right-0 bg-black/60 text-yellow-400 text-[10px] px-1 font-bold rounded-bl">{item.star}★</div>
+        <div data-export-hide="true" className="absolute top-0 right-0 bg-black/60 text-yellow-400 text-[10px] px-1 font-bold rounded-bl">{item.star}★</div>
       </div>
       {showNames && <div className={`text-center py-1 px-0.5 text-[10px] font-semibold truncate ${getNameBgColor(item)}`}>{displayName}</div>}
     </div>

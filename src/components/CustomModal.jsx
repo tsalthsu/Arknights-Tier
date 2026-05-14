@@ -7,7 +7,7 @@ export default function CustomModal({ isOpen, title, message, onConfirm, onCance
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className={`max-w-sm w-full p-6 rounded-2xl shadow-2xl transform transition-all ${isDark ? 'bg-zinc-900 border border-zinc-700 text-white' : 'bg-white text-slate-900'}`}>
         {title && <h3 className="text-lg font-bold mb-2">{title}</h3>}
-        <p className={`mb-6 text-sm ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>{message}</p>
+        <div className={`mb-6 text-sm ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>{message}</div>
         <div className="flex justify-end gap-3">
           {onCancel && (
             <button 
