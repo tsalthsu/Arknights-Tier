@@ -34,12 +34,12 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-zinc-900 text-white' : 'bg-slate-100 text-slate-900'}`}>
       <header className={`sticky top-0 z-50 backdrop-blur border-b ${isDark ? 'bg-zinc-900/80 border-zinc-700' : 'bg-white/80 border-slate-300'}`}>
         <div className="mx-auto max-w-[1600px] px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img src={logoImg} alt="Logo" className="w-8 h-8 object-contain drop-shadow-md" />
             <div className="text-xl font-black uppercase tracking-wide">
               {title}
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-3">
             <div className="relative">
               <button 

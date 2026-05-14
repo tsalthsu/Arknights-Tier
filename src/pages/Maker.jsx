@@ -31,8 +31,27 @@ const MSG = {
 };
 
 export default function Maker({ lang, isDark }) {
-  const [tiers, setTiers] = useState(INITIAL_TIERS);
-  const [pool, setPool] = useState([]);
+  const [tiers, setTiers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('maker_tiers');
+      return saved ? JSON.parse(saved) : INITIAL_TIERS;
+    } catch { return INITIAL_TIERS; }
+  });
+  const [pool, setPool] = useState(() => {
+    try {
+      const saved = localStorage.getItem('maker_pool');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('maker_tiers', JSON.stringify(tiers));
+  }, [tiers]);
+
+  useEffect(() => {
+    localStorage.setItem('maker_pool', JSON.stringify(pool));
+  }, [pool]);
+
   const [showNames, setShowNames] = useState(true);
   const [loading, setLoading] = useState(false);
   const [submitModal, setSubmitModal] = useState(false);
