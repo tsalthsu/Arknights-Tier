@@ -17,36 +17,39 @@ const STAR_FILTERS = [
   { id: '4', label: { ko: '4성', en: '4★', ja: '★4', zh: '4★' } },
 ];
 
-const TIMEFRAMES = [
-  { id: '1m', label: { ko: '최근 1달', en: '1 Month', ja: '1ヶ月', zh: '最近1月' }, days: 30 },
-  { id: '3m', label: { ko: '최근 3달', en: '3 Months', ja: '3ヶ月', zh: '最近3月' }, days: 90 },
-  { id: '6m', label: { ko: '최근 6달', en: '6 Months', ja: '6ヶ月', zh: '最近6月' }, days: 180 },
-  { id: '1y', label: { ko: '최근 1년', en: '1 Year', ja: '1年', zh: '最近1年' }, days: 365 },
-  { id: 'all', label: { ko: '전체 데이터', en: 'All Time', ja: '全期間', zh: '全部' }, days: Infinity },
-];
-
 const SCORE_MAP = { 'OP': 5, 'S': 4, 'A': 3, 'B': 2, 'C': 1, 'D': 0 };
 const TIER_COLORS = { 'OP': '#ff7f7f', 'S': '#ffbf7f', 'A': '#ffff7f', 'B': '#7fff7f', 'C': '#7fbfff', 'D': '#bfbfbf' };
 const DIST_COLORS = { 'OP': '#ec4899', 'S': '#f97316', 'A': '#eab308', 'B': '#22c55e', 'C': '#3b82f6', 'D': '#64748b' };
 const TIER_ORDER = ['OP', 'S', 'A', 'B', 'C', 'D'];
 
 const MSG = {
-  ko: { sortScore: '점수순', sortRelease: '출시순', viewChart: '그래프 📊', viewTable: '리스트 📋', noData: '데이터가 없습니다.', avgScore: '평균 점수', votes: '투표수' },
-  en: { sortScore: 'Score', sortRelease: 'Release', viewChart: 'Chart 📊', viewTable: 'List 📋', noData: 'No data available.', avgScore: 'Avg Score', votes: 'Votes' },
-  ja: { sortScore: 'スコア順', sortRelease: '実装順', viewChart: 'グラフ 📊', viewTable: 'リスト 📋', noData: 'データがありません。', avgScore: '平均スコア', votes: '投票数' },
-  zh: { sortScore: '评分', sortRelease: '实装', viewChart: '图表 📊', viewTable: '列表 📋', noData: '暂无数据。', avgScore: '平均分', votes: '票数' }
+  ko: { sortScore: '점수순', sortRelease: '출시순', viewChart: '그래프 📊', viewTable: '리스트 📋', noData: '데이터가 없습니다.', avgScore: '현재 메타 점수', votes: '이번 달 투표수', trend: '최근 6개월 트렌드' },
+  en: { sortScore: 'Score', sortRelease: 'Release', viewChart: 'Chart 📊', viewTable: 'List 📋', noData: 'No data available.', avgScore: 'Current Meta Score', votes: 'Votes this month', trend: '6-Month Trend' },
+  ja: { sortScore: 'スコア順', sortRelease: '実装順', viewChart: 'グラフ 📊', viewTable: 'リスト 📋', noData: 'データがありません。', avgScore: '現在のスコア', votes: '今月の投票数', trend: '直近6ヶ月のトレンド' },
+  zh: { sortScore: '评分', sortRelease: '实装', viewChart: '图表 📊', viewTable: '列表 📋', noData: '暂无数据。', avgScore: '当前环境得分', votes: '本月票数', trend: '近6个月趋势' }
+};
+
+// Generate an array of the last N months (e.g. ["2023-11", "2023-12", "2024-01"])
+const getRecentMonths = (count) => {
+    const arr = [];
+    const now = new Date();
+    for (let i = count - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        arr.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+    return arr;
 };
 
 export default function Stats({ lang, isDark }) {
   const [selectedTag, setSelectedTag] = useState('general');
   const [starFilter, setStarFilter] = useState('all');
-  const [selectedTfs, setSelectedTfs] = useState({ '1m': false, '3m': false, '6m': false, '1y': false, 'all': true });
   const [loading, setLoading] = useState(true);
-  const [sortConfig, setSortConfig] = useState({ key: 'release', dir: 'desc' });
-  const [viewMode, setViewMode] = useState('chart'); // 'chart' | 'table'
+  const [sortConfig, setSortConfig] = useState({ key: 'score', dir: 'desc' });
+  const [viewMode, setViewMode] = useState('table'); // Default to table to show off the cool sparklines
   
-  const [rawStats, setRawStats] = useState({});
+  const [charHistory, setCharHistory] = useState({});
   const [charList, setCharList] = useState([]);
+  const [targetMonths, setTargetMonths] = useState([]);
   
   const chartRef = useRef(null);
   const [hoverInfo, setHoverInfo] = useState({ active: false, chars: [], x: 0, y: 0 });
@@ -67,58 +70,67 @@ export default function Stats({ lang, isDark }) {
       const snap = await getDocs(q);
       const results = snap.docs.map(d => d.data());
 
-      const now = new Date().getTime();
-      const calcForDays = (daysLimit) => {
-         const valid = results.filter(r => {
-             if (daysLimit === Infinity) return true;
-             const t = new Date(r.timestamp).getTime();
-             return (now - t) <= daysLimit * 24 * 60 * 60 * 1000;
-         });
+      const bucketMap = {};
+      
+      // Group by YYYY-MM
+      results.forEach(r => {
+         const date = new Date(r.timestamp);
+         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
          
-         const skinMap = {};
-         valid.forEach(r => {
-             if (!r.tiers) return;
-             Object.entries(r.tiers).forEach(([tier, items]) => {
-                 const score = SCORE_MAP[tier];
-                 if (score === undefined || !items) return;
-                 items.forEach(itemId => {
-                     if (!skinMap[itemId]) skinMap[itemId] = { total: 0, count: 0, tiers: { OP:0, S:0, A:0, B:0, C:0, D:0 } };
-                     skinMap[itemId].total += score;
-                     skinMap[itemId].count += 1;
-                     skinMap[itemId].tiers[tier] += 1;
-                 });
+         if (!bucketMap[monthKey]) bucketMap[monthKey] = {};
+         
+         if (!r.tiers) return;
+         Object.entries(r.tiers).forEach(([tier, items]) => {
+             const score = SCORE_MAP[tier];
+             if (score === undefined || !items) return;
+             items.forEach(itemId => {
+                 if (!bucketMap[monthKey][itemId]) {
+                     bucketMap[monthKey][itemId] = { total: 0, count: 0, tiers: { OP:0, S:0, A:0, B:0, C:0, D:0 } };
+                 }
+                 bucketMap[monthKey][itemId].total += score;
+                 bucketMap[monthKey][itemId].count += 1;
+                 bucketMap[monthKey][itemId].tiers[tier] += 1;
              });
          });
-         
-         const statsObj = {};
-         Object.keys(skinMap).forEach(k => {
-             statsObj[k] = {
-                 avg: skinMap[k].total / skinMap[k].count,
-                 count: skinMap[k].count,
-                 tiers: skinMap[k].tiers
-             };
-         });
-         return statsObj;
-      };
-
-      const byTf = {};
-      TIMEFRAMES.forEach(tf => {
-          byTf[tf.id] = calcForDays(tf.days);
       });
-      setRawStats(byTf);
+
+      // We want to analyze the last 6 months up to now.
+      const months = getRecentMonths(6);
+      setTargetMonths(months);
+
+      // Build continuous history per character
+      const history = {};
+      chars.forEach(char => {
+          let lastKnownAvg = null; // Carry over past scores if no votes in a month
+          
+          // Pre-scan older buckets (before the 6 month window) to establish an initial baseline if possible
+          const allBuckets = Object.keys(bucketMap).sort();
+          for (const bKey of allBuckets) {
+              if (bKey >= months[0]) break; // Stop when we reach our 6-month window
+              const b = bucketMap[bKey]?.[char.id];
+              if (b) lastKnownAvg = b.total / b.count;
+          }
+
+          const timeline = months.map(m => {
+              const b = bucketMap[m]?.[char.id];
+              if (b) {
+                  const avg = b.total / b.count;
+                  lastKnownAvg = avg;
+                  return { month: m, avg, count: b.count, tiers: b.tiers, hasData: true };
+              } else {
+                  return { month: m, avg: lastKnownAvg, count: 0, tiers: null, hasData: false };
+              }
+          });
+          
+          history[char.id] = timeline;
+      });
+
+      setCharHistory(history);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleTf = (id) => {
-      setSelectedTfs(prev => {
-          const next = { ...prev, [id]: !prev[id] };
-          if (Object.values(next).every(v => !v)) next['all'] = true; 
-          return next;
-      });
   };
 
   const handleSort = (key) => {
@@ -127,8 +139,12 @@ export default function Stats({ lang, isDark }) {
     setSortConfig({ key, dir });
   };
 
-  const activeTfIds = TIMEFRAMES.filter(t => selectedTfs[t.id]).map(t => t.id);
-  const primaryTfId = activeTfIds[0] || 'all';
+  // The "Current" score is always the last item in the 6-month timeline
+  const getCurrentStats = (charId) => {
+      const timeline = charHistory[charId];
+      if (!timeline || timeline.length === 0) return null;
+      return timeline[timeline.length - 1]; // Current month
+  };
 
   const sortedChars = useMemo(() => {
       let filtered = charList;
@@ -136,14 +152,23 @@ export default function Stats({ lang, isDark }) {
           filtered = filtered.filter(c => c.star === parseInt(starFilter));
       }
       
+      // Filter out characters that have NO data in the entire 6 month timeline
+      filtered = filtered.filter(c => {
+          const t = charHistory[c.id];
+          if (!t) return false;
+          return t.some(m => m.avg !== null);
+      });
+      
       return [...filtered].sort((a,b) => {
           if (sortConfig.key === 'release') {
               const valA = a.releaseTimestamp || 0;
               const valB = b.releaseTimestamp || 0;
               return sortConfig.dir === 'desc' ? valB - valA : valA - valB;
           } else {
-              const avgA = rawStats[primaryTfId]?.[a.id]?.avg ?? -1;
-              const avgB = rawStats[primaryTfId]?.[b.id]?.avg ?? -1;
+              const statsA = getCurrentStats(a.id);
+              const statsB = getCurrentStats(b.id);
+              const avgA = statsA?.avg ?? -1;
+              const avgB = statsB?.avg ?? -1;
               
               if (avgA === avgB) {
                   const valA = a.releaseTimestamp || 0;
@@ -153,7 +178,7 @@ export default function Stats({ lang, isDark }) {
               return sortConfig.dir === 'desc' ? avgB - avgA : avgA - avgB;
           }
       });
-  }, [charList, starFilter, sortConfig, rawStats, primaryTfId]);
+  }, [charList, starFilter, sortConfig, charHistory]);
 
   const getTopPercent = (avg) => ((5.0 - avg) / 5.5) * 100;
   
@@ -169,14 +194,14 @@ export default function Stats({ lang, isDark }) {
   const charPositions = useMemo(() => {
       const positions = [];
       sortedChars.forEach((skin, i) => {
-          const stats = rawStats[primaryTfId]?.[skin.id];
-          if (!stats) return;
+          const stats = getCurrentStats(skin.id);
+          if (!stats || stats.avg === null) return;
           const x = 2 + (i / Math.max(1, sortedChars.length - 1)) * 96; 
           const y = getTopPercent(stats.avg);
           positions.push({ skin, x, y, stats });
       });
       return positions;
-  }, [sortedChars, rawStats, primaryTfId]);
+  }, [sortedChars, charHistory]);
 
   const handleMouseMove = (e) => {
       if (!chartRef.current) return;
@@ -230,19 +255,7 @@ export default function Stats({ lang, isDark }) {
         </div>
         
         <div className="flex flex-col gap-3 xl:items-end justify-between">
-            <div className="flex flex-wrap gap-2 items-center justify-start xl:justify-end">
-                <span className={`text-sm font-bold opacity-70 mr-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Timeframes:</span>
-                {TIMEFRAMES.map(tf => (
-                    <button 
-                      key={tf.id}
-                      onClick={() => toggleTf(tf.id)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${selectedTfs[tf.id] ? 'bg-emerald-600 text-white shadow-sm' : (isDark ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-slate-100 hover:bg-slate-200')}`}
-                    >
-                      {tf.label[lang]}
-                    </button>
-                ))}
-            </div>
-            <div className="flex flex-wrap gap-2 items-center justify-start xl:justify-end">
+            <div className="flex flex-wrap gap-2 items-center justify-start xl:justify-end border-t pt-3 w-full md:border-t-0 md:pt-0">
                 <button 
                   onClick={() => setViewMode('chart')}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${viewMode === 'chart' ? 'bg-indigo-600 text-white shadow-md' : (isDark ? 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700')}`}
@@ -296,69 +309,51 @@ export default function Stats({ lang, isDark }) {
                   <GuideLabel top={90.90} label="D" color={TIER_COLORS['D']} isDark={isDark} />
 
                   {sortedChars.map((skin, i) => {
-                      const points = [];
-                      activeTfIds.forEach(tfId => {
-                          const stats = rawStats[tfId]?.[skin.id];
-                          if (stats !== undefined) points.push({ tfId, avg: stats.avg, y: getTopPercent(stats.avg) });
-                      });
+                      const timeline = charHistory[skin.id];
+                      if (!timeline) return null;
                       
-                      if (points.length === 0) return null;
+                      const validPoints = timeline.filter(m => m.avg !== null);
+                      if (validPoints.length === 0) return null;
                       
+                      const currentPoint = validPoints[validPoints.length - 1]; // most recent available
+                      const oldestPoint = validPoints[0];
+                      const diff = currentPoint.avg - oldestPoint.avg;
                       const x = 2 + (i / Math.max(1, sortedChars.length - 1)) * 96; 
-                      const recentPt = points[0]; 
-                      const oldestPt = points[points.length - 1];
-                      const diff = recentPt.avg - oldestPt.avg;
-                      const lineColor = diff > 0 ? '#22c55e' : (diff < 0 ? '#ef4444' : '#94a3b8');
                       
                       const isHovered = hoverInfo.active && hoverInfo.chars.some(c => c.skin.id === skin.id);
                       const baseZIndex = isHovered ? 40 : 20;
 
                       return (
                          <div key={skin.id} className="absolute w-0 h-full pointer-events-none" style={{ left: `${x}%`, top: 0 }}>
-                             {points.length > 1 && (
-                                 <div className={`absolute w-[2px] -ml-[1px] rounded-full transition-opacity ${isHovered ? 'opacity-100 w-[4px] -ml-[2px]' : 'opacity-30'}`} style={{
-                                     top: `${Math.min(recentPt.y, oldestPt.y)}%`,
-                                     height: `${Math.abs(recentPt.y - oldestPt.y)}%`,
-                                     backgroundColor: lineColor,
+                             {validPoints.length > 1 && (
+                                 <div className={`absolute w-[2px] -ml-[1px] rounded-full transition-opacity ${isHovered ? 'opacity-100 w-[4px] -ml-[2px]' : 'opacity-10'}`} style={{
+                                     top: `${Math.min(getTopPercent(currentPoint.avg), getTopPercent(oldestPoint.avg))}%`,
+                                     height: `${Math.abs(getTopPercent(currentPoint.avg) - getTopPercent(oldestPoint.avg))}%`,
+                                     backgroundColor: diff > 0 ? '#22c55e' : (diff < 0 ? '#ef4444' : '#94a3b8'),
                                      zIndex: baseZIndex - 5
                                  }}/>
                              )}
                              
-                             {points.map((pt, idx) => {
-                                 const isMain = idx === 0;
-                                 if (isMain) {
-                                    return (
-                                        <div key={pt.tfId} className={`absolute bg-cover bg-center rounded-full border-[2px] transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 shadow-md ${isHovered ? 'w-14 h-14 border-[3px] scale-110 shadow-xl z-50 ring-4 ring-white/20' : 'w-9 h-9 opacity-90'}`}
-                                          style={{
-                                            top: `${pt.y}%`,
-                                            backgroundImage: `url(https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/${skin.id}.png)`,
-                                            borderColor: getMainTierColor(pt.avg),
-                                            zIndex: baseZIndex
-                                          }}
-                                        />
-                                    )
-                                 } else {
-                                    return (
-                                        <div key={pt.tfId} className={`absolute rounded-full border border-black/50 transform -translate-x-1/2 -translate-y-1/2 transition-all ${isHovered ? 'w-4 h-4 opacity-100' : 'w-2.5 h-2.5 opacity-50'}`} 
-                                            style={{ top: `${pt.y}%`, backgroundColor: getMainTierColor(pt.avg), zIndex: baseZIndex - 1 }}
-                                        />
-                                    )
-                                 }
-                             })}
+                             <div className={`absolute bg-cover bg-center rounded-full border-[2px] transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 shadow-md ${isHovered ? 'w-14 h-14 border-[3px] scale-110 shadow-xl z-50 ring-4 ring-white/20' : 'w-9 h-9 opacity-90'}`}
+                               style={{
+                                 top: `${getTopPercent(currentPoint.avg)}%`,
+                                 backgroundImage: `url(https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/${skin.id}.png)`,
+                                 borderColor: getMainTierColor(currentPoint.avg),
+                                 zIndex: baseZIndex
+                               }}
+                             />
                          </div>
                       )
                   })}
-                  {/* Global Hover Tooltip */}
+                  
                   {hoverInfo.active && hoverInfo.chars.length > 0 && (() => {
                       const rootX = hoverInfo.x;
                       const rootY = hoverInfo.chars[0].y;
 
-                      // Auto-adjust horizontal position
                       let xClass = '-translate-x-1/2';
                       if (rootX < 20) xClass = 'translate-x-0 ml-6';
                       else if (rootX > 80) xClass = '-translate-x-full -ml-6';
 
-                      // Auto-adjust vertical position
                       let yClass = '-translate-y-full -mt-6';
                       if (rootY < 20) yClass = 'translate-y-0 mt-6';
 
@@ -380,7 +375,7 @@ export default function Stats({ lang, isDark }) {
                                               <span className="text-[10px] opacity-70 font-semibold">{c.stats.count} {t('votes')}</span>
                                           </div>
                                       </div>
-                                      <DistributionBar tiers={c.stats.tiers} total={c.stats.count} showLabels />
+                                      {c.stats.tiers && <DistributionBar tiers={c.stats.tiers} total={c.stats.count} showLabels />}
                                   </div>
                               ))}
                           </div>
@@ -399,14 +394,18 @@ export default function Stats({ lang, isDark }) {
                         <tr className={`text-sm ${isDark ? 'bg-zinc-900/50 text-zinc-400' : 'bg-slate-50 text-slate-500'}`}>
                             <th className="p-4 font-semibold w-12">#</th>
                             <th className="p-4 font-semibold min-w-[150px]">Character</th>
+                            <th className="p-4 font-semibold w-[150px] text-center">{t('trend')}</th>
                             <th className="p-4 font-semibold text-right min-w-[100px]">{t('avgScore')}</th>
                             <th className="p-4 font-semibold w-[250px] hidden sm:table-cell">Tier Distribution</th>
                         </tr>
                     </thead>
                     <tbody className="text-sm">
                         {sortedChars.map((skin, i) => {
-                            const stats = rawStats[primaryTfId]?.[skin.id];
-                            if (!stats) return null;
+                            const timeline = charHistory[skin.id];
+                            if (!timeline) return null;
+                            const currentStats = getCurrentStats(skin.id);
+                            if (!currentStats || currentStats.avg === null) return null;
+
                             return (
                                 <tr key={skin.id} className={`border-t transition ${isDark ? 'border-zinc-700 hover:bg-zinc-700/30' : 'border-slate-100 hover:bg-slate-50'}`}>
                                     <td className="p-4 font-medium opacity-50">{i + 1}</td>
@@ -416,14 +415,17 @@ export default function Stats({ lang, isDark }) {
                                             <span className="font-bold text-base">{skin.nameMap?.[lang] || skin.label}</span>
                                         </div>
                                     </td>
+                                    <td className="p-4 text-center">
+                                        <Sparkline timeline={timeline} isDark={isDark} />
+                                    </td>
                                     <td className="p-4 text-right">
                                         <div className="flex flex-col items-end">
-                                            <span className="font-black text-lg" style={{ color: getMainTierColor(stats.avg) }}>{stats.avg.toFixed(2)}</span>
-                                            <span className="text-[10px] opacity-50 font-semibold">{stats.count} {t('votes')}</span>
+                                            <span className="font-black text-lg" style={{ color: getMainTierColor(currentStats.avg) }}>{currentStats.avg.toFixed(2)}</span>
+                                            <span className="text-[10px] opacity-50 font-semibold">{currentStats.count} {t('votes')}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 align-middle hidden sm:table-cell">
-                                        <DistributionBar tiers={stats.tiers} total={stats.count} showLabels />
+                                        {currentStats.tiers ? <DistributionBar tiers={currentStats.tiers} total={currentStats.count} showLabels /> : <span className="opacity-30">N/A</span>}
                                     </td>
                                 </tr>
                             );
@@ -435,6 +437,56 @@ export default function Stats({ lang, isDark }) {
       )}
     </div>
   );
+}
+
+// 6-Month Sparkline Component (SVG)
+function Sparkline({ timeline, isDark }) {
+    const width = 100;
+    const height = 30;
+    
+    const validPoints = timeline.filter(m => m.avg !== null);
+    if (validPoints.length < 2) return <span className="text-[10px] opacity-30">Not enough data</span>;
+
+    const maxPoints = timeline.length; // usually 6
+    const stepX = width / (maxPoints - 1);
+    
+    let pathD = "";
+    let isFirst = true;
+
+    const points = [];
+    timeline.forEach((m, idx) => {
+        if (m.avg !== null) {
+            const x = idx * stepX;
+            // Map avg (0-5) to y (0-30). Invert Y axis: avg=5 -> y=0, avg=0 -> y=30
+            const y = height - (m.avg / 5.0) * height;
+            points.push({x, y, avg: m.avg});
+            if (isFirst) {
+                pathD += `M ${x} ${y} `;
+                isFirst = false;
+            } else {
+                pathD += `L ${x} ${y} `;
+            }
+        }
+    });
+
+    const diff = validPoints[validPoints.length - 1].avg - validPoints[0].avg;
+    const strokeColor = diff > 0 ? '#22c55e' : (diff < 0 ? '#ef4444' : '#94a3b8');
+
+    return (
+        <svg width={width} height={height} className="overflow-visible inline-block">
+            {/* Background guide lines */}
+            <line x1={0} y1={0} x2={width} y2={0} stroke={isDark ? '#3f3f46' : '#e2e8f0'} strokeWidth={1} strokeDasharray="2,2"/>
+            <line x1={0} y1={height} x2={width} y2={height} stroke={isDark ? '#3f3f46' : '#e2e8f0'} strokeWidth={1} strokeDasharray="2,2"/>
+            
+            {/* The trend line */}
+            <path d={pathD} fill="none" stroke={strokeColor} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            
+            {/* The final dot (current score) */}
+            {points.length > 0 && (
+                <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r={3} fill={strokeColor} />
+            )}
+        </svg>
+    );
 }
 
 function DistributionBar({ tiers, total, showLabels = false }) {
