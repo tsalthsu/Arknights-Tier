@@ -22,7 +22,18 @@ export default function App() {
   }, [theme]);
   const isDark = theme === 'dark';
 
-  const [lang, setLang] = useState(() => localStorage.getItem('lang') || 'ko');
+  const [lang, setLang] = useState(() => {
+    const storedLang = localStorage.getItem('lang');
+    if (storedLang) return storedLang;
+
+    const browserLang = navigator.language || navigator.userLanguage;
+    if (browserLang) {
+      if (browserLang.startsWith('ko')) return 'ko';
+      if (browserLang.startsWith('ja')) return 'ja';
+      if (browserLang.startsWith('zh')) return 'zh';
+    }
+    return 'en';
+  });
   const [langOpen, setLangOpen] = useState(false);
   useEffect(() => { localStorage.setItem('lang', lang); }, [lang]);
 
