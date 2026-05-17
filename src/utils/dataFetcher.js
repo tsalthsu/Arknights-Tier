@@ -12,7 +12,7 @@ const EXCLUDE_IDS = new Set([
   'char_608_acpion', 'char_604_ccast', 'char_602_cdfend', 
   'char_601_cguard', 'char_605_cmedic', 'char_603_csnipe', 
   'char_607_cspec', 'char_606_csuppo', 'char_600_cpione',
-  'char_617_sharp2', 'char_610_acfend'
+  'char_617_sharp2', 'char_610_acfend', 'char_4025_aprot2'
 ]);
 
 const isExcluded = (c, key) => {
